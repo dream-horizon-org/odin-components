@@ -6,6 +6,7 @@ import com.dream11.mysql.config.metadata.ComponentMetadata;
 import com.dream11.mysql.config.metadata.aws.AwsAccountData;
 import com.dream11.mysql.config.metadata.aws.RDSData;
 import com.dream11.mysql.config.user.DeployConfig;
+import com.dream11.mysql.constant.Constants;
 import com.dream11.mysql.util.ApplicationUtil;
 import com.google.inject.Inject;
 import java.util.ArrayList;
@@ -32,24 +33,39 @@ public class DeployService {
     List<Callable<Void>> tasks = new ArrayList<>();
 
     log.info("Starting with mysql deployment");
-    String name = componentMetadata.getComponentName() + "-" + componentMetadata.getEnvName();
+    String name =
+        ApplicationUtil.joinByDash(
+            componentMetadata.getComponentName(), componentMetadata.getEnvName());
+    String randomId = ApplicationUtil.generateRandomId(4);
 
     Map<String, String> tags =
         ApplicationUtil.merge(List.of(this.awsAccountData.getTags(), this.deployConfig.getTags()));
 
+    String clusterIdentifier = createClusterAndWait(name, randomId, tags);
+
+    tasks.addAll(createWriterInstanceAndWaitTaks(name, randomId, clusterIdentifier, tags));
+    tasks.addAll(createReaderInstancesAndWaitTaks(name, randomId, clusterIdentifier, tags));
+
+    ApplicationUtil.runOnExecutorService(tasks);
+
+    log.info("MySQL cluster deployment completed successfully");
+  }
+
+  private String createClusterAndWait(String name, String randomId, Map<String, String> tags) {
     String clusterParameterGroupName =
         deployConfig.getClusterParameterGroupName() != null
             ? deployConfig.getClusterParameterGroupName()
             : Application.getState().getClusterParameterGroupName();
     if (clusterParameterGroupName == null) {
-      clusterParameterGroupName = name + "-cpg-" + ApplicationUtil.generateRandomId(4);
+      clusterParameterGroupName =
+          ApplicationUtil.joinByDash(name, Constants.ClusterParameterGroupSuffix, randomId);
       rdsClient.createClusterParameterGroup(clusterParameterGroupName, tags, deployConfig);
       Application.getState().setClusterParameterGroupName(clusterParameterGroupName);
     }
 
     String clusterIdentifier = Application.getState().getClusterIdentifier();
     if (clusterIdentifier == null) {
-      clusterIdentifier = name + "-cluster-" + ApplicationUtil.generateRandomId(4);
+      clusterIdentifier = ApplicationUtil.joinByDash(name, Constants.ClusterSuffix, randomId);
       List<String> endpoints =
           rdsClient.createDBCluster(
               clusterIdentifier, clusterParameterGroupName, tags, deployConfig, rdsData);
@@ -58,13 +74,19 @@ public class DeployService {
       Application.getState().setReaderEndpoint(endpoints.get(1));
       rdsClient.waitUntilDBClusterAvailable(clusterIdentifier);
     }
+    return clusterIdentifier;
+  }
 
+  private List<Callable<Void>> createWriterInstanceAndWaitTaks(
+      String name, String randomId, String clusterIdentifier, Map<String, String> tags) {
+    List<Callable<Void>> tasks = new ArrayList<>();
     String writerInstanceParameterGroupName =
         deployConfig.getWriter().getInstanceParameterGroupName() != null
             ? deployConfig.getWriter().getInstanceParameterGroupName()
             : Application.getState().getWriterInstanceParameterGroupName();
     if (writerInstanceParameterGroupName == null) {
-      writerInstanceParameterGroupName = name + "-wpg-" + ApplicationUtil.generateRandomId(4);
+      writerInstanceParameterGroupName =
+          ApplicationUtil.joinByDash(name, Constants.WriterInstanceParameterGroupSuffix, randomId);
       rdsClient.createInstanceParameterGroup(
           writerInstanceParameterGroupName,
           deployConfig.getVersion(),
@@ -74,7 +96,8 @@ public class DeployService {
     }
 
     if (Application.getState().getWriterInstanceIdentifier() == null) {
-      String writerInstanceIdentifier = name + "-writer-" + ApplicationUtil.generateRandomId(4);
+      String writerInstanceIdentifier =
+          ApplicationUtil.joinByDash(name, Constants.WriterInstanceSuffix, randomId);
       rdsClient.createDBInstance(
           writerInstanceIdentifier,
           clusterIdentifier,
@@ -88,7 +111,12 @@ public class DeployService {
             return null;
           });
     }
+    return tasks;
+  }
 
+  private List<Callable<Void>> createReaderInstancesAndWaitTaks(
+      String name, String randomId, String clusterIdentifier, Map<String, String> tags) {
+    List<Callable<Void>> tasks = new ArrayList<>();
     if (deployConfig.getReaders() != null && !deployConfig.getReaders().isEmpty()) {
       if (Application.getState().getReaderInstanceIdentifiers() == null) {
         Application.getState().setReaderInstanceIdentifiers(new HashMap<>());
@@ -98,26 +126,33 @@ public class DeployService {
       }
 
       for (int i = 0; i < deployConfig.getReaders().size(); i++) {
+        String parameterGroupKey = String.valueOf(i);
+        String instanceParameterGroupName =
+            deployConfig.getReaders().get(i).getInstanceParameterGroupName() != null
+                ? deployConfig.getReaders().get(i).getInstanceParameterGroupName()
+                : Application.getState()
+                    .getReaderInstanceParameterGroupNames()
+                    .get(parameterGroupKey);
+        if (instanceParameterGroupName == null) {
+          instanceParameterGroupName =
+              ApplicationUtil.joinByDash(
+                  name, Constants.ReaderInstanceParameterGroupSuffix, parameterGroupKey, randomId);
+          rdsClient.createInstanceParameterGroup(
+              instanceParameterGroupName,
+              deployConfig.getVersion(),
+              tags,
+              deployConfig.getReaders().get(i).getInstanceParameterGroupConfig());
+          Application.getState()
+              .getReaderInstanceParameterGroupNames()
+              .put(parameterGroupKey, instanceParameterGroupName);
+        }
         for (int j = 0; j < deployConfig.getReaders().get(i).getInstanceCount(); j++) {
-          String key = i + "-" + j;
-          String instanceParameterGroupName =
-              deployConfig.getReaders().get(i).getInstanceParameterGroupName() != null
-                  ? deployConfig.getReaders().get(i).getInstanceParameterGroupName()
-                  : Application.getState().getReaderInstanceParameterGroupNames().get(key);
-          if (instanceParameterGroupName == null) {
-            instanceParameterGroupName = name + "-rpg-" + ApplicationUtil.generateRandomId(4);
-            rdsClient.createInstanceParameterGroup(
-                instanceParameterGroupName,
-                deployConfig.getVersion(),
-                tags,
-                deployConfig.getReaders().get(i).getInstanceParameterGroupConfig());
-            Application.getState()
-                .getReaderInstanceParameterGroupNames()
-                .put(key, instanceParameterGroupName);
-          }
-          if (Application.getState().getReaderInstanceIdentifiers().get(key) == null) {
+          String instanceKey = ApplicationUtil.joinByDash(String.valueOf(i), String.valueOf(j));
+
+          if (Application.getState().getReaderInstanceIdentifiers().get(instanceKey) == null) {
             String readerInstanceIdentifier =
-                name + "-reader-" + i + "-" + j + "-" + ApplicationUtil.generateRandomId(4);
+                ApplicationUtil.joinByDash(
+                    name, Constants.ReaderInstanceSuffix, instanceKey, randomId);
             rdsClient.createDBInstance(
                 readerInstanceIdentifier,
                 clusterIdentifier,
@@ -126,7 +161,7 @@ public class DeployService {
                 deployConfig.getReaders().get(i));
             Application.getState()
                 .getReaderInstanceIdentifiers()
-                .put(key, readerInstanceIdentifier);
+                .put(instanceKey, readerInstanceIdentifier);
 
             tasks.add(
                 () -> {
@@ -138,8 +173,6 @@ public class DeployService {
       }
     }
 
-    ApplicationUtil.runOnExecutorService(tasks);
-
-    log.info("MySQL cluster deployment completed successfully");
+    return tasks;
   }
 }

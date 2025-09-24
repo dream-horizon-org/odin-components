@@ -151,4 +151,8 @@ public class ApplicationUtil {
   public Throwable getRootCause(Throwable throwable) {
     return Objects.isNull(throwable.getCause()) ? throwable : getRootCause(throwable.getCause());
   }
+
+  public String joinByDash(String... strings) {
+    return String.join("-", strings);
+  }
 }

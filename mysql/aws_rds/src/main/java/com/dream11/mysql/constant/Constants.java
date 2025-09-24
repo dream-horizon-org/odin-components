@@ -14,4 +14,11 @@ public class Constants {
   public final String CONFIG = "CONFIG";
 
   public final String ENGINE_TYPE = "aurora-mysql";
+  public final String ClusterParameterGroupSuffix = "cpg";
+  public final String InstanceParameterGroupSuffix = "ipg";
+  public final String ClusterSuffix = "cluster";
+  public final String WriterInstanceParameterGroupSuffix = "wpg";
+  public final String WriterInstanceSuffix = "writer";
+  public final String ReaderInstanceParameterGroupSuffix = "rpg";
+  public final String ReaderInstanceSuffix = "reader";
 }

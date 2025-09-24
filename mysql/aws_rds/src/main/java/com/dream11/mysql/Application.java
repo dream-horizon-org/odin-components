@@ -13,7 +13,6 @@ import com.dream11.mysql.inject.AwsModule;
 import com.dream11.mysql.inject.ConfigModule;
 import com.dream11.mysql.operation.*;
 import com.dream11.mysql.operation.Operation;
-import com.dream11.mysql.operation.Redeploy;
 import com.dream11.mysql.operation.Undeploy;
 import com.dream11.mysql.state.State;
 import com.dream11.mysql.util.ApplicationUtil;
@@ -166,7 +165,6 @@ public class Application {
             yield Deploy.class;
           }
           case UNDEPLOY -> Undeploy.class;
-          case REDEPLOY -> Redeploy.class;
             /* Add operation */
         };
 
