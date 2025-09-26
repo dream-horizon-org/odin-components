@@ -1,0 +1,17 @@
+{
+  "replicationGroupDescription": "ElastiCache Redis replication group",
+  "cacheNodeType": "cache.t4g.micro",
+  "numNodeGroups": 1,
+  "replicasPerNodeGroup": 0,
+  "automaticFailoverEnabled": false,
+  "multiAzEnabled": false,
+  "transitEncryptionEnabled": false,
+  "atRestEncryptionEnabled": false,
+  "snapshotRetentionLimit": 0,
+  "tags": {},
+  "timeout": 0,
+  "autoMinorVersionUpgrade": true,
+  "logDeliveryConfigurations": [],
+  "ipDiscovery": "ipv4",
+  "userGroupIds": []
+}

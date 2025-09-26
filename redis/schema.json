@@ -1,0 +1,72 @@
+{
+  "title": "Redis Component Definition",
+  "type": "object",
+  "properties": {
+    "redisVersion": {
+      "type": "string",
+      "enum": ["7.1", "7.0", "6.2", "6.0", "5.0.6"],
+      "description": "The version of the Redis engine to use. Supported versions: 7.1 (latest), 7.0, 6.2, 6.0, 5.0.6. Newer versions provide better performance and features. Must be explicitly provided."
+    },
+    "clusterModeEnabled": {
+      "type": "boolean",
+      "description": "Specifies whether to run in Redis Cluster mode for sharding and horizontal scaling. For large datasets, enabling this is recommended. **Default: `false`** (single-shard setup).",
+      "default": false
+    },
+    "authentication": {
+      "type": "object",
+      "description": "Controls whether to enable the Redis AUTH command for password protection. It is highly recommended to enable this for production.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Set to `true` to enable password protection. **Default: `false`** (disabled for simplicity in trusted environments).",
+          "default": false
+        },
+        "authToken": {
+          "type": "string",
+          "description": "The secret password to use when authentication is enabled. This value must be provided by the user and should be managed securely."
+        }
+      },
+      "required": ["enabled"],
+      "if": {
+        "properties": { "enabled": { "const": true } }
+      },
+      "then": {
+        "required": ["authToken"]
+      }
+    },
+    "discovery": {
+      "type": "object",
+      "description": "Defines the logical DNS names where the Redis service will be accessible.",
+      "properties": {
+        "primaryEndpoint": {
+          "type": "string",
+          "description": "The logical DNS name for the primary (read/write) endpoint. This is the entry point for all write operations. Must be provided by the user."
+        },
+        "readOnlyEndpoint": {
+          "type": "string",
+          "description": "The logical DNS name for the read-only endpoint, which directs traffic to replicas. Using this endpoint is a best practice for scaling read-heavy workloads."
+        }
+      },
+      "required": ["primaryEndpoint"]
+    },
+    "maxmemoryPolicy": {
+      "type": "string",
+      "description": "The eviction policy Redis uses when `maxmemory` is reached. This is a key parameter for tuning cache behavior. **Default: `allkeys-lru`** (evicts any key using LRU, effective for general-purpose caching).",
+      "enum": [
+        "volatile-lru",
+        "allkeys-lru",
+        "volatile-lfu",
+        "allkeys-lfu",
+        "volatile-random",
+        "allkeys-random",
+        "volatile-ttl",
+        "noeviction"
+      ]
+    }
+  },
+  "required": [
+    "redisVersion",
+    "authentication",
+    "discovery"
+  ]
+}
