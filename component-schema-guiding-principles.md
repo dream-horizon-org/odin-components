@@ -411,7 +411,7 @@ The generator creates tables from schema:
 
 ---
 
-## Appendix: Real-World Example - Redis Component Analysis
+## Real-World Example - Redis Component Analysis
 
 ### Properties That Failed LSP Testing
 
