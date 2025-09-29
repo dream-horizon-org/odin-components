@@ -31,10 +31,12 @@ This flavor uses **cost-optimized defaults** to help you get started quickly:
 ```
 This creates a single `cache.t4g.micro` node with no replicas, no encryption, and no backups - perfect for development at minimal cost.
 
+**Note**: `cacheSubnetGroupName` and `securityGroupIds` can also be provided via COMPONENT_METADATA for backward compatibility.
+
 ### Production-Ready Configuration
 ```json
 {
-  "cacheSubnetGroupName": "my-cache-subnet-group",
+  "cacheSubnetGroupName": "prod-cache-subnet-group",
   "securityGroupIds": ["sg-12345678", "sg-87654321"],
   "cacheNodeType": "cache.r6g.large",
   "replicasPerNodeGroup": 2,
@@ -42,7 +44,13 @@ This creates a single `cache.t4g.micro` node with no replicas, no encryption, an
   "multiAzEnabled": true,
   "transitEncryptionEnabled": true,
   "atRestEncryptionEnabled": true,
-  "snapshotRetentionLimit": 7
+  "snapshotRetentionLimit": 7,
+  "snapshotWindow": "03:00-05:00",
+  "preferredMaintenanceWindow": "sun:05:00-sun:06:00",
+  "tags": {
+    "Environment": "production",
+    "Team": "platform"
+  }
 }
 ```
 This creates a highly available setup with encryption, automatic failover, and backups.
@@ -59,7 +67,19 @@ This creates a highly available setup with encryption, automatic failover, and b
   "multiAzEnabled": true
 }
 ```
-This creates a sharded Redis cluster for horizontal scaling.
+This creates a sharded Redis cluster for horizontal scaling. Note: `automaticFailoverEnabled` is required for cluster mode.
+
+### Custom Parameter Group Configuration
+```json
+{
+  "cacheSubnetGroupName": "my-cache-subnet-group",
+  "securityGroupIds": ["sg-12345678"],
+  "cacheParameterGroupName": "my-custom-redis7-params",
+  "cacheNodeType": "cache.r6g.large",
+  "replicasPerNodeGroup": 1
+}
+```
+Use a custom parameter group when you need to tune Redis settings like maxmemory-policy, timeout, or other Redis parameters not exposed directly.
 
 ## Production Deployment Recommendations
 

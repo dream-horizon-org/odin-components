@@ -4,11 +4,12 @@
 1. [Core Architecture: Definition vs Provisioning](#core-architecture-definition-vs-provisioning)
 2. [The Liskov Substitution Principle (LSP)](#the-liskov-substitution-principle-lsp)
 3. [Property Placement Decision Framework](#property-placement-decision-framework)
-4. [Default Values Philosophy](#default-values-philosophy)
-5. [Property Description Guidelines](#property-description-guidelines)
-6. [API Mapping and Validation](#api-mapping-and-validation)
-7. [Common Pitfalls and Lessons Learned](#common-pitfalls-and-lessons-learned)
-8. [Documentation and README Generation](#documentation-and-readme-generation)
+4. [Property Exposure Principles](#property-exposure-principles)
+5. [Default Values Philosophy](#default-values-philosophy)
+6. [Property Description Guidelines](#property-description-guidelines)
+7. [API Mapping and Validation](#api-mapping-and-validation)
+8. [Common Pitfalls and Lessons Learned](#common-pitfalls-and-lessons-learned)
+9. [Documentation and README Generation](#documentation-and-readme-generation)
 
 ---
 
@@ -182,8 +183,153 @@ Before adding a property to root definition, ask:
 | `port` | Self-managed Flavour only | Managed services fix this value |
 | `notifyKeyspaceEvents` | Flavour | Requires platform-specific setup (parameter groups) |
 | `securityGroupIds` | AWS Flavour | AWS-specific networking |
+| `maxmemoryPolicy` | Flavour | Requires custom parameter group in AWS |
+| `replicationGroupId` | Not Exposed | Platform-controlled for uniqueness |
 
 
+## Property Exposure Principles
+
+### Core Philosophy
+**Not all API properties should be exposed to users. Some should be platform-controlled, others should have smart defaults, and only essential configuration should require user input.**
+
+### Property Categories
+
+#### 1. Platform-Controlled (Never Expose)
+Properties that the platform should generate and manage internally:
+
+**Characteristics:**
+- Resource identifiers that must be unique
+- Properties that could cause conflicts if user-controlled
+- Internal implementation details
+- Properties that enforce platform conventions
+
+**Examples:**
+```json
+{
+  "replicationGroupId": "auto-generated",  // Platform ensures uniqueness
+  "clusterId": "auto-generated",           // Prevents naming conflicts
+  "internalDnsName": "auto-generated"      // Platform-managed networking
+}
+```
+
+**Why Not Expose:**
+- Prevents naming conflicts across environments
+- Enforces naming conventions
+- Ensures uniqueness guarantees
+- Hides infrastructure complexity
+- Maintains platform consistency
+
+#### 2. Smart Defaults (Expose but Provide Defaults)
+Properties users CAN configure but usually shouldn't need to:
+
+**Characteristics:**
+- Have sensible defaults for 80% of use cases
+- Optional for getting started
+- Can be tuned for specific needs
+
+**Examples:**
+```json
+{
+  "replicationGroupDescription": "ElastiCache Redis replication group",
+  "cacheNodeType": "cache.t4g.micro",
+  "timeout": 0,
+  "ipDiscovery": "ipv4"
+}
+```
+
+#### 3. User-Required (Must Expose, No Default Possible)
+Properties that are environment-specific and cannot have meaningful defaults:
+
+**Characteristics:**
+- Environment-specific configuration
+- Security-sensitive settings
+- Network/VPC configuration
+- No universal default makes sense
+
+**Examples:**
+```json
+{
+  "cacheSubnetGroupName": null,  // User's VPC configuration
+  "securityGroupIds": null,      // User's security setup
+  "authToken": null,              // Secrets/passwords
+  "vpcId": null                   // Infrastructure-specific
+}
+```
+
+### Decision Framework for Property Exposure
+
+```
+┌─────────────────────┐
+│   API Property      │
+└──────────┬──────────┘
+           │
+           ▼
+┌───────────────────────────┐     YES     ┌─────────────────────┐
+│ Platform needs control    │────────────►│ DON'T EXPOSE        │
+│ for uniqueness/convention?│             │ (Platform-generated)│
+└───────────┬───────────────┘             └─────────────────────┘
+            │ NO
+            ▼
+┌───────────────────────────┐     YES     ┌─────────────────────┐
+│ Is it environment or      │────────────►│ EXPOSE              │
+│ security specific?        │             │ (Required, no default)│
+└───────────┬───────────────┘             └─────────────────────┘
+            │ NO
+            ▼
+┌───────────────────────────┐     YES     ┌─────────────────────┐
+│ Does 80% use case have    │────────────►│ EXPOSE with DEFAULT │
+│ a common value?           │             │ (Optional property) │
+└───────────┬───────────────┘             └─────────────────────┘
+            │ NO
+            ▼
+┌───────────────────────────┐
+│ EXPOSE as Required        │
+│ (User must configure)     │
+└───────────────────────────┘
+```
+
+### Examples of Property Exposure Decisions
+
+| Property | Expose? | Default? | Reasoning |
+|----------|---------|----------|-----------|
+| `replicationGroupId` | ❌ No | N/A | Platform ensures uniqueness, prevents conflicts |
+| `resourcePrefix` | ❌ No | N/A | Platform naming convention |
+| `cacheSubnetGroupName` | ✅ Yes | ❌ No | Environment-specific VPC config |
+| `securityGroupIds` | ✅ Yes | ❌ No | Security-specific to user's setup |
+| `cacheNodeType` | ✅ Yes | ✅ Yes | Common starting point (t4g.micro) |
+| `replicasPerNodeGroup` | ✅ Yes | ✅ Yes | Dev default (0), production can override |
+| `authToken` | ✅ Yes | ❌ No | Security credential, user-specific |
+| `autoMinorVersionUpgrade` | ✅ Yes | ✅ Yes | Security best practice (true) |
+
+### Platform Control Benefits
+
+When the platform controls certain properties:
+
+1. **Consistency:** All resources follow naming conventions
+2. **Safety:** No accidental conflicts or overwrites
+3. **Traceability:** Can embed metadata (env, app, timestamp)
+4. **Migration:** Platform can handle ID changes transparently
+5. **Governance:** Enforce organizational policies automatically
+
+### User Experience Optimization
+
+The goal is to minimize required configuration while maintaining flexibility:
+
+```yaml
+# Minimal valid configuration (only required fields)
+redis:
+  redisVersion: "7.1"
+  authentication:
+    enabled: true
+    authToken: "${SECRET}"
+  discovery:
+    primaryEndpoint: "redis.myapp.internal"
+  aws_elasticache:
+    cacheSubnetGroupName: "my-subnet-group"
+    securityGroupIds: ["sg-12345"]
+
+# Everything else has smart defaults or is platform-controlled
+```
 
 ## Default Values Philosophy
 

@@ -41,11 +41,6 @@
     }
   ],
   "properties": {
-    "replicationGroupId": {
-      "type": "string",
-      "pattern": "^[a-z][a-z0-9\\-]{0,39}$",
-      "description": "AWS resource identifier for the ElastiCache replication group. Becomes the permanent cluster identifier visible in AWS console and CLI. Cannot be changed after creation. Must be 1-40 alphanumeric characters or hyphens, start with a letter, no spaces or uppercase. Choose descriptive names following your naming convention (e.g., 'prod-cache-users'). **Required by AWS API**."
-    },
     "replicationGroupDescription": {
       "type": "string",
       "maxLength": 255,
@@ -74,39 +69,24 @@
     },
     "cacheSubnetGroupName": {
       "type": "string",
-      "description": "The name of the ElastiCache Subnet Group, which defines the VPC and subnets for the cluster. This is fundamental for placing Redis within your private network."
+      "description": "The name of the ElastiCache Subnet Group, which defines the VPC and subnets for the cluster. This is fundamental for placing Redis within your private network. **Note:** If provided, this will override any cacheSubnetGroupName supplied through COMPONENT_METADATA for backward compatibility."
     },
     "securityGroupIds": {
       "type": "array",
-      "description": "A list of VPC Security Group IDs that act as a virtual firewall for the cluster. This is a critical security setting that controls network access to your Redis nodes.",
+      "description": "A list of VPC Security Group IDs that act as a virtual firewall for the cluster. This is a critical security setting that controls network access to your Redis nodes. **Note:** If provided, this will override any securityGroupIds supplied through COMPONENT_METADATA for backward compatibility.",
       "items": {
         "type": "string",
         "pattern": "^sg-[a-f0-9]+$"
       },
       "minItems": 1
     },
-    "parameterGroupName": {
+    "cacheParameterGroupName": {
       "type": "string",
-      "description": "ElastiCache parameter group name containing Redis configuration settings. Controls advanced Redis parameters not exposed as direct properties. AWS provides defaults: `default.redis7` for Redis 7.x, `default.redis6.x` for 6.x, append `.cluster.on` for cluster mode. Create custom groups for fine-tuning. **Default:** AWS selects based on Redis version and cluster mode. **Production:** Create custom parameter groups for workload-specific tuning (timeout, maxmemory-policy, etc.)."
-    },
-    "maxmemoryPolicy": {
-      "type": "string",
-      "description": "Eviction policy when Redis reaches memory limit. Determines which keys to remove when memory is full. Choose based on data access patterns: LRU for temporal data, LFU for frequency-based, TTL for explicit expiration, noeviction to reject writes. Performance impact varies by workload. **Note:** Requires a custom parameter group to configure; cannot be set with default parameter groups. **Default: `allkeys-lru`** (evicts least recently used keys from all keys, suitable for general caching). **Production:** Use `volatile-lru` for mixed persistent/cache data; `allkeys-lru` for pure cache; `noeviction` for persistent stores with monitoring.",
-      "enum": [
-        "volatile-lru",
-        "allkeys-lru",
-        "volatile-lfu",
-        "allkeys-lfu",
-        "volatile-random",
-        "allkeys-random",
-        "volatile-ttl",
-        "noeviction"
-      ],
-      "default": "allkeys-lru"
+      "description": "The name of the parameter group to associate with this replication group. If omitted, the default cache parameter group for the specified engine is used. For Redis 3.2.4+, use `default.redis3.2` (cluster mode disabled) or `default.redis3.2.cluster.on` (cluster mode enabled). Custom parameter groups enable fine-tuning of Redis settings like maxmemory-policy, eviction behaviors, etc. **Default:** AWS selects based on Redis version and cluster mode. **Production:** Create custom parameter groups for workload-specific tuning."
     },
     "automaticFailoverEnabled": {
       "type": "boolean",
-      "description": "If `true`, ElastiCache automatically promotes a replica if the primary fails. Requires at least one replica. Enable for production workloads. **Default: `false`** (disabled to minimize complexity and cost for development/testing).",
+      "description": "Specifies whether a read-only replica is automatically promoted to read/write primary if the existing primary fails. AutomaticFailoverEnabled must be enabled for Redis (cluster mode enabled) replication groups. Requires at least one replica. **Default: `false`** (disabled to minimize complexity and cost for development/testing). **Production:** Enable for high availability.",
       "default": false
     },
     "multiAzEnabled": {
@@ -140,11 +120,6 @@
       "type": "object",
       "description": "A key-value map of AWS tags to apply to all created resources for cost tracking, automation, and organization. **Default: `{}`** (no tags).",
       "default": {}
-    },
-    "timeout": {
-      "type": "number",
-      "description": "The client idle timeout in seconds. Set a non-zero value to automatically close idle clients. **Default: `0`** (disabled, suitable for long-lived connections).",
-      "default": 0
     },
     "snapshotWindow": {
       "type": "string",
@@ -192,7 +167,7 @@
     },
     "preferredCacheClusterAZs": {
       "type": "array",
-      "description": "List of EC2 Availability Zones for placing cache nodes. Number of AZs should match total node count for even distribution. **Production:** Specify AZs close to application servers to minimize latency.",
+      "description": "List of EC2 Availability Zones for placing cache nodes. Number of AZs should match total node count for even distribution. **Note:** If provided, this will override any preferredCacheClusterAZs supplied through COMPONENT_METADATA for backward compatibility. **Production:** Specify AZs close to application servers to minimize latency.",
       "items": {
         "type": "string",
         "pattern": "^[a-z]{2}-[a-z]+-[0-9][a-z]$"
@@ -201,25 +176,7 @@
     "kmsKeyId": {
       "type": "string",
       "description": "ARN of customer-managed KMS key for at-rest encryption. Only applies when `atRestEncryptionEnabled: true`. **Production:** Use customer-managed keys for compliance (HIPAA, PCI-DSS). Ensure proper key rotation policies."
-    },
-    "ipDiscovery": {
-      "type": "string",
-      "enum": ["ipv4", "ipv6"],
-      "description": "IP protocol version for node discovery endpoints. IPv6 requires Redis 6.2-7.1 (Redis OSS) or 7.2+ (Valkey) on Nitro instances. Affects how clients resolve node addresses. Choose based on VPC configuration and client support. **Default: `'ipv4'`** (universal compatibility). **Production:** Use IPv6 only with full stack IPv6 support; test client library compatibility first.",
-      "default": "ipv4"
-    },
-    "userGroupIds": {
-      "type": "array",
-      "description": "User group IDs for Redis ACL-based access control (RBAC). Requires Redis 6.0+ and authentication enabled. Each group contains users with specific command/key permissions defined via ACL rules. Enables fine-grained security beyond simple AUTH. **Default: `[]`** (no RBAC, uses AUTH only). **Production:** Implement least-privilege access with groups: 'read-only' for analytics, 'write-only' for producers, 'admin' for operations; regularly audit permissions.",
-      "items": {
-        "type": "string"
-      },
-      "default": []
     }
   },
-  "required": [
-    "replicationGroupId",
-    "cacheSubnetGroupName",
-    "securityGroupIds"
-  ]
+  "required": []
 }
