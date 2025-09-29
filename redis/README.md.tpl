@@ -21,4 +21,4 @@ Deploy and manage Redis on various platforms.
 
 ## Contributing
 
-* Run `bash readme-generator.sh` to auto generate README
+* Run `bash ../readme-generator.sh` from the component directory or `bash readme-generator.sh` from repository root to auto generate README

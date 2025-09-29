@@ -322,8 +322,7 @@ redis:
   authentication:
     enabled: true
     authToken: "${SECRET}"
-  discovery:
-    primaryEndpoint: "redis.myapp.internal"
+  discovery: "redis.myapp.internal"
   aws_elasticache:
     cacheSubnetGroupName: "my-subnet-group"
     securityGroupIds: ["sg-12345"]
@@ -513,8 +512,9 @@ Components use `readme-generator.sh` to create documentation from schemas:
 
 ```bash
 #!/bin/bash
-# Run from component root after any schema changes
+# Run from repository root after any schema changes
 bash readme-generator.sh
+# This will recursively generate READMEs for all components and their flavors
 ```
 
 ### Documentation Structure

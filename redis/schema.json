@@ -35,19 +35,8 @@
       }
     },
     "discovery": {
-      "type": "object",
-      "description": "Defines the logical DNS names where the Redis service will be accessible.",
-      "properties": {
-        "primaryEndpoint": {
-          "type": "string",
-          "description": "Logical DNS name where clients connect for read/write operations. Acts as the primary entry point to your Redis instance, abstracting the underlying infrastructure. All write operations and strongly-consistent reads should use this endpoint. Must be provided by user based on their DNS architecture."
-        },
-        "readOnlyEndpoint": {
-          "type": "string",
-          "description": "Logical DNS name for load-balanced read operations across replicas. Automatically distributes read traffic to reduce primary node load. Use for eventually-consistent read operations that can tolerate replication lag. **Production:** Essential for read-heavy workloads; can improve read throughput by 2-5x with multiple replicas."
-        }
-      },
-      "required": ["primaryEndpoint"]
+      "type": "string",
+      "description": "Logical DNS name where clients connect for read/write operations. Acts as the primary entry point to your Redis instance, abstracting the underlying infrastructure. Modern Redis clients handle read/write routing intelligently, automatically discovering replicas and routing reads appropriately in cluster mode. Must be provided by user based on their DNS architecture."
     }
   },
   "required": [
