@@ -22,10 +22,10 @@ Controls whether to enable the Redis AUTH command for password protection. It is
 
 #### Properties
 
-| Property    | Type    | Required | Description                                                                                                                                                                                                                                                                                                                                                                                |
-|-------------|---------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `enabled`   | boolean | **Yes**  | Enables Redis AUTH command for password-based access control. When true, clients must authenticate before executing commands. Adds minimal performance overhead but critical for security. **Default: `false`** (disabled for development simplicity). **Production:** Always enable for any environment with sensitive data or external access.                                           |
-| `authToken` | string  | No       | Secret password required for Redis AUTH when authentication is enabled. Use strong passwords (minimum 16 characters with mixed case, numbers, special characters). Store securely using secrets management systems, never hardcode. Rotate regularly per security policies. **Production:** Use secrets manager integration (AWS Secrets Manager, HashiCorp Vault) for automated rotation. |
+| Property    | Type    | Required | Description                                                                                                                                                                                                                                                                                                                                                                               |
+|-------------|---------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`   | boolean | **Yes**  | Enables Redis AUTH command for password-based access control. When true, clients must authenticate before executing commands. Adds minimal performance overhead but critical for security. **Default: `false`** (disabled for development simplicity). **Production:** Always enable for any environment with sensitive data or external access.                                          |
+| `authToken` | string  | No       | Secret password required for Redis AUTH when authentication is enabled. Use strong passwords (minimum 16 characters with mixed case, numbers, special characters). Store securely using secrets management systems, never hardcode. Rotate regularly per security policies. **Production:** Use secrets manager integration (AWS Secrets Manager, HashCorp Vault) for automated rotation. |
 
 ### discovery
 
@@ -39,6 +39,19 @@ Defines the logical DNS names where the Redis service will be accessible.
 | `readOnlyEndpoint` | string | No       | Logical DNS name for load-balanced read operations across replicas. Automatically distributes read traffic to reduce primary node load. Use for eventually-consistent read operations that can tolerate replication lag. **Production:** Essential for read-heavy workloads; can improve read throughput by 2-5x with multiple replicas. |
 
 
-## AutoDocumentation
+
+## Running locally
+
+* Update `example/*.json` accordingly
+* Download DSL jar from [artifactory](https://dreamsports.jfrog.io/ui/repos/tree/General/d11-repo/com/dream11/odin-component-interface)
+* Execute the following commands
+```
+  export PATH_TO_JAR=<path to downloaded jar>
+  bash run.sh stage=<stage> operation=<operation> account_flavour=<account_flavour>
+  example:
+  bash run.sh stage=deploy account_flavour=dev_aws_elasticache
+```
+
+## Contributing
 
 * Run `bash readme-generator.sh` to auto generate README

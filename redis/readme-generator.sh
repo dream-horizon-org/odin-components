@@ -12,5 +12,5 @@ for flavor in *; do
     continue
   fi
   # Generate flavor level README using its own template
-  json-schema-docs -schema ${flavor}/schema.json -template ${flavor}/README.md.tpl > ${flavor}/README.md
+  json-schema-docs -schema "${flavor}/schema.json" -template "${flavor}/README.md.tpl" > "${flavor}/README.md"
 done
