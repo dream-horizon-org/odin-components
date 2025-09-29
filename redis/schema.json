@@ -48,20 +48,6 @@
         }
       },
       "required": ["primaryEndpoint"]
-    },
-    "maxmemoryPolicy": {
-      "type": "string",
-      "description": "Eviction policy when Redis reaches memory limit. Determines which keys to remove when memory is full. Choose based on data access patterns: LRU for temporal data, LFU for frequency-based, TTL for explicit expiration, noeviction to reject writes. Performance impact varies by workload. **Default: `allkeys-lru`** (evicts least recently used keys from all keys, suitable for general caching). **Production:** Use `volatile-lru` for mixed persistent/cache data; `allkeys-lru` for pure cache; `noeviction` for persistent stores with monitoring.",
-      "enum": [
-        "volatile-lru",
-        "allkeys-lru",
-        "volatile-lfu",
-        "allkeys-lfu",
-        "volatile-random",
-        "allkeys-random",
-        "volatile-ttl",
-        "noeviction"
-      ]
     }
   },
   "required": [

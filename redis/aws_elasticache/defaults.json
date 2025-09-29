@@ -10,6 +10,7 @@
   "snapshotRetentionLimit": 0,
   "tags": {},
   "timeout": 0,
+  "maxmemoryPolicy": "allkeys-lru",
   "autoMinorVersionUpgrade": true,
   "logDeliveryConfigurations": [],
   "ipDiscovery": "ipv4",
