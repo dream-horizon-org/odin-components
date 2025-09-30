@@ -38,6 +38,19 @@
         "required": ["snapshotWindow"],
         "errorMessage": "snapshotWindow is required when snapshotRetentionLimit is greater than 0"
       }
+    },
+    {
+      "if": {
+        "properties": {
+          "numNodeGroups": { "minimum": 2 }
+        }
+      },
+      "then": {
+        "properties": {
+          "clusterModeEnabled": { "const": true }
+        },
+        "errorMessage": "numNodeGroups can only be greater than 1 when clusterModeEnabled is true"
+      }
     }
   ],
   "properties": {
