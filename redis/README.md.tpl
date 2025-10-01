@@ -3,7 +3,8 @@
 Deploy and manage Redis on various platforms.
 
 ## Flavors
-- [aws_elasticache](aws_elasticache)
+- [aws_elasticache](aws_elasticache) - Managed Redis using AWS ElastiCache
+- [aws_container](aws_container) - Self-managed Redis on AWS EKS using OpsTree Operator
 
 {{ .Markdown 2 }}
 
