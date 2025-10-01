@@ -16,7 +16,7 @@ jobs:
       DESCRIPTION_PATH: .description
       VERSION_FILE: component.json
       COMPONENT: ${{ github.event.inputs.component }}
-      INDEX_BRANCH: test_gh_pages
+      INDEX_BRANCH: gh_pages
       INDEX_FILE: index.yaml
       PACKAGE_SCRIPT: package.sh
 
@@ -86,7 +86,7 @@ jobs:
           assets='${{ steps.create_release.outputs.assets }}'
           export url="$(jq -r '.[0]?.browser_download_url // empty' <<< "$assets")"
 
-          yq -i '.components."${{env.COMPONENT}}"  = (.components."${{env.COMPONENT}}"  // [])' "${{env.INDEX_FILE}}"
+          yq -i '.components."${{env.COMPONENT}}"  = (.components."${{env.COMPONENT}}"  // [])' "${INDEX_FILE}"
           yq -i '.components."${{env.COMPONENT}}" += ({
             "name": "${{env.COMPONENT}}",
             "description": "${{steps.extract_component_details.outputs.DESCRIPTION}}", 
