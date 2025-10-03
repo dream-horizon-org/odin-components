@@ -472,7 +472,7 @@ Before adding ANY property to a flavour schema:
 │  Step 1: User Configuration                                 │
 │  ├── Root properties (redis/schema.json)                    │
 │  │   └── clusterModeEnabled: true                           │
-│  └── Flavor properties (redis/aws_container/schema.json)    │
+│  └── Flavor properties (redis/aws_k8s/schema.json)    │
 │      └── deploymentMode: "cluster"                          │
 └─────────────────────────────────────────────────────────────┘
                           │
@@ -523,7 +523,7 @@ Since schemas are merged, flavour schemas can reference root schema properties d
 }
 ```
 
-**Flavor Schema (redis/aws_container/schema.json):**
+**Flavor Schema (redis/aws_k8s/schema.json):**
 ```json
 {
   "allOf": [

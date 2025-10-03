@@ -1,4 +1,4 @@
-# AWS Container (EKS) Flavour
+# AWS K8s (EKS) Flavour
 
 Deploy and manage Redis on AWS EKS using the [Opstree Redis Operator](https://github.com/OT-CONTAINER-KIT/redis-operator). Defaults are optimized for simplicity and cost-effectiveness, perfect for getting started quickly. Easily upgrade to Sentinel or Cluster mode for production workloads requiring high availability or horizontal scaling.
 
@@ -1843,7 +1843,7 @@ Use `additionalConfig` for advanced Redis settings:
 
 **Scenario**: 100GB Redis with HA (1 master + 2 replicas)
 
-| Aspect | ElastiCache | EKS (aws_container) | Savings |
+| Aspect | ElastiCache | EKS (aws_k8s) | Savings |
 |--------|-------------|---------------------|---------|
 | **Compute** | $766/month (3 × r5.xlarge on-demand) | $420/month (3 × m5.xlarge) | $346/month |
 | **Storage** | Included | $24/month (3 × 35GB gp3) | -$24/month |
@@ -1918,11 +1918,11 @@ Pack 4-6 small Redis instances on single m5.large node.
 
 ## Migration Guide
 
-### From ElastiCache to aws_container
+### From ElastiCache to aws_k8s
 
 **Conceptual Mapping**:
 
-| ElastiCache | aws_container | Notes |
+| ElastiCache | aws_k8s | Notes |
 |-------------|---------------|-------|
 | `cacheNodeType: cache.r5.large` | `master.resources: {cpu: 2000m, memory: 16Gi}` | Map instance type to K8s resources |
 | `replicasPerNodeGroup: 2` | `replicaCount: 2` | Same concept |

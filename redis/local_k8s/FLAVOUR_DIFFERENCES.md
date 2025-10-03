@@ -1,8 +1,8 @@
-# Why Local Container and AWS Container Cannot Share Schema
+# Why Local K8s and AWS K8s Cannot Share Schema
 
 ## TL;DR
 
-**We cannot symlink `local_container/schema.json` to `aws_container/schema.json`** because they have **environment-specific differences** in defaults, validation rules, and available features. While the schema structure is identical, the **values and descriptions** are fundamentally different.
+**We cannot symlink `local_k8s/schema.json` to `aws_k8s/schema.json`** because they have **environment-specific differences** in defaults, validation rules, and available features. While the schema structure is identical, the **values and descriptions** are fundamentally different.
 
 ## Background
 
@@ -16,7 +16,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 1. Storage Class (Critical)
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Default** | `gp3` | `standard` |
 | **Description** | References AWS EBS volumes (gp3, io2), IOPS, encryption, KMS | References local storage provisioners (local-path, hostpath, standard) |
@@ -26,18 +26,18 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 2. Backup Configuration
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | Automated S3 backups with CronJob | **Not supported** |
 | **Storage** | S3 bucket (required when enabled) | N/A |
 | **Authentication** | IAM/IRSA required | N/A |
 | **Validation** | Requires `s3Bucket` field when `backup.enabled: true` | Schema has no backup section |
 
-**Why it matters:** Backups are not relevant for local development environments. The aws_container schema **requires** `s3Bucket` field when backups are enabled, which would fail locally. Local development is ephemeral by nature.
+**Why it matters:** Backups are not relevant for local development environments. The aws_k8s schema **requires** `s3Bucket` field when backups are enabled, which would fail locally. Local development is ephemeral by nature.
 
 ### 3. Metrics/Monitoring Configuration
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | Prometheus metrics with redis-exporter sidecar | **Not supported** |
 | **ServiceMonitor** | Prometheus Operator integration available | N/A |
@@ -48,7 +48,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 4. Service Annotations
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Description** | Details AWS Load Balancer Controller annotations (NLB, internal, cross-zone) | Generic annotations, mentions MetalLB for advanced local LB |
 | **Examples** | AWS-specific: `aws-load-balancer-type: nlb` | No AWS-specific examples |
@@ -59,7 +59,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 5. Topology Spread Constraints
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | Topology spread across zones/nodes | **Not supported** |
 | **Use case** | Multi-AZ distribution, fine-grained spreading | N/A |
@@ -70,7 +70,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 6. SecurityContext
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | Configurable security context (UIDs, GIDs, security standards) | **Not supported** |
 | **Use case** | Compliance requirements (HIPAA, PCI-DSS), organizational policies | N/A |
@@ -81,7 +81,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 7. Persistence Description
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Volume type** | "Uses EBS volumes in EKS, which are AZ-specific" | "Uses local storage provisioner (hostPath, local-path, standard)" |
 | **Topology notes** | Pods must be in same AZ as volumes | No AZ restrictions |
@@ -89,7 +89,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 8. NetworkPolicy
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | Network isolation via NetworkPolicy | **Not supported** |
 | **Use case** | Multi-tenant security, namespace isolation | N/A |
@@ -100,7 +100,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 9. PodDisruptionBudget
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | PDB for availability during disruptions | **Not supported** |
 | **Use case** | Protects against node drains, cluster upgrades | N/A |
@@ -111,7 +111,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 10. ServiceAccount
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | Custom ServiceAccount with IAM roles (IRSA) | **Not supported** |
 | **Use case** | IAM permissions for S3, Secrets Manager, CloudWatch | N/A |
@@ -122,7 +122,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 11. PriorityClassName
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | Pod priority for resource contention | **Not supported** |
 | **Use case** | Ensures Redis preempts lower-priority workloads | N/A |
@@ -133,7 +133,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 12. Tolerations
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Feature** | Tolerations for tainted nodes | **Not supported** |
 | **Use case** | Dedicated node pools, spot instances for replicas | N/A |
@@ -144,7 +144,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 13. Node Selector
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **Examples** | Memory-optimized r5 instances, spot vs on-demand | Generic node labels for local multi-node |
 | **Production guidance** | "Dedicate memory-optimized nodes, separate master (on-demand) from replicas (spot)" | Basic node pinning for local setups |
@@ -152,7 +152,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 ### 14. Service Type Description
 
-| Aspect | AWS Container | Local Container |
+| Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
 | **LoadBalancer** | "Creates AWS NLB for external access" | "Behavior depends on local k8s - may create external IP or be equivalent to NodePort" |
 | **Guidance** | "Always use internal NLB annotation" | "Use NodePort for access from host machine" |

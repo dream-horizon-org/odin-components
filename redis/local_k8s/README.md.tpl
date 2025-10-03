@@ -1,4 +1,4 @@
-# Redis Local Container Flavour
+# Redis Local K8s Flavour
 
 This flavour deploys Redis on **local Kubernetes** distributions (kind, k3s, minikube, Docker Desktop, etc.) using the Opstree Redis Operator.
 
@@ -190,8 +190,8 @@ kubectl run -it --rm redis-cli --image=redis:7 --restart=Never -- redis-cli -h r
 
 ## Differences from AWS Container Flavour
 
-**Why can't we symlink to aws_container schema?**
-See [FLAVOUR_DIFFERENCES.md](./FLAVOUR_DIFFERENCES.md) for detailed explanation of differences between local_container and aws_container flavours.
+**Why can't we symlink to aws_k8s schema?**
+See [FLAVOUR_DIFFERENCES.md](./FLAVOUR_DIFFERENCES.md) for detailed explanation of differences between local_k8s and aws_k8s flavours.
 
 Key differences:
 - **Storage**: Local StorageClass (local-path/hostpath) vs AWS EBS (gp3)

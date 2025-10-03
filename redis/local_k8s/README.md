@@ -1,4 +1,4 @@
-# Redis Local Container Flavour
+# Redis Local K8s Flavour
 
 This flavour deploys Redis on **local Kubernetes** distributions (kind, k3s, minikube, Docker Desktop, etc.) using the Opstree Redis Operator.
 
@@ -281,7 +281,7 @@ Persistent storage configuration using Kubernetes PersistentVolumeClaims (PVCs).
 | `aof`          | [object](#aof) | No       | Append-Only File (AOF) configuration for durable write logging. AOF logs every write operation, providing better durability than RDB. Slower to load on restart but minimal data loss (typically <1 second).                                                                                                                                                                                                                                                                                                 |
 | `rdb`          | [object](#rdb) | No       | Redis Database (RDB) snapshot configuration for point-in-time backups. RDB creates binary snapshots of the dataset at specified intervals. Faster to load than AOF but may lose data between snapshots.                                                                                                                                                                                                                                                                                                      |
 | `size`         | string         | No       | Size of persistent volume per Redis pod. Should be at least 2-3x expected dataset size to account for RDB snapshots, AOF files, and growth. Format: Mi, Gi, or Ti (e.g., '10Gi', '100Gi'). **Default: `10Gi`** (suitable for small datasets). **Production:** Calculate as (expected dataset size × 2.5) for RDB forks and AOF rewrites, plus growth buffer.                                                                                                                                                 |
-| `storageClass` | string         | No       | Kubernetes StorageClass name for local persistent volumes. Common options: **`standard`** (default in many local k8s), **`local-path`** (Rancher local-path-provisioner for k3s/kind), **`hostpath`** (minikube default). StorageClass must exist in your local cluster. **Default: `standard`** (works with most local k8s distributions). **Local setup:** For kind/k3s, use `local-path`; for minikube, use `hostpath` or `standard`. See FLAVOUR_DIFFERENCES.md for why this differs from aws_container. |
+| `storageClass` | string         | No       | Kubernetes StorageClass name for local persistent volumes. Common options: **`standard`** (default in many local k8s), **`local-path`** (Rancher local-path-provisioner for k3s/kind), **`hostpath`** (minikube default). StorageClass must exist in your local cluster. **Default: `standard`** (works with most local k8s distributions). **Local setup:** For kind/k3s, use `local-path`; for minikube, use `hostpath` or `standard`. See FLAVOUR_DIFFERENCES.md for why this differs from aws_k8s. |
 
 #### aof
 
@@ -428,8 +428,8 @@ Kubernetes StatefulSet update strategy controlling how Redis pods are updated du
 
 ## Differences from AWS Container Flavour
 
-**Why can't we symlink to aws_container schema?**
-See [FLAVOUR_DIFFERENCES.md](./FLAVOUR_DIFFERENCES.md) for detailed explanation of differences between local_container and aws_container flavours.
+**Why can't we symlink to aws_k8s schema?**
+See [FLAVOUR_DIFFERENCES.md](./FLAVOUR_DIFFERENCES.md) for detailed explanation of differences between local_k8s and aws_k8s flavours.
 
 Key differences:
 - **Storage**: Local StorageClass (local-path/hostpath) vs AWS EBS (gp3)

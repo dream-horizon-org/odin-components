@@ -1,5 +1,5 @@
 {
-  "title": "Redis AWS Container (EKS) Flavour Configuration",
+  "title": "Redis AWS K8s (EKS) Flavour Configuration",
   "type": "object",
   "allOf": [
     {

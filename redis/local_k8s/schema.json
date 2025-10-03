@@ -1,5 +1,5 @@
 {
-  "title": "Redis Local Container (Local Kubernetes) Flavour Configuration",
+  "title": "Redis Local K8s (Local Kubernetes) Flavour Configuration",
   "type": "object",
   "allOf": [
     {
@@ -247,7 +247,7 @@
         },
         "storageClass": {
           "type": "string",
-          "description": "Kubernetes StorageClass name for local persistent volumes. Common options: **`standard`** (default in many local k8s), **`local-path`** (Rancher local-path-provisioner for k3s/kind), **`hostpath`** (minikube default). StorageClass must exist in your local cluster. **Default: `standard`** (works with most local k8s distributions). **Local setup:** For kind/k3s, use `local-path`; for minikube, use `hostpath` or `standard`. See FLAVOUR_DIFFERENCES.md for why this differs from aws_container.",
+          "description": "Kubernetes StorageClass name for local persistent volumes. Common options: **`standard`** (default in many local k8s), **`local-path`** (Rancher local-path-provisioner for k3s/kind), **`hostpath`** (minikube default). StorageClass must exist in your local cluster. **Default: `standard`** (works with most local k8s distributions). **Local setup:** For kind/k3s, use `local-path`; for minikube, use `hostpath` or `standard`. See FLAVOUR_DIFFERENCES.md for why this differs from aws_k8s.",
           "default": "standard"
         },
         "size": {
