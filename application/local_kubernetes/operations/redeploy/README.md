@@ -2,7 +2,7 @@
 
 Redeploy application
 
-### GCP container redeploy operation schema
+### Local kubernetes redeploy operation schema
 
 #### Properties
 
@@ -157,6 +157,7 @@ The liveness probe configuration
 
 | Property              | Type    | Required | Description                                                              |
 |-----------------------|---------|----------|--------------------------------------------------------------------------|
+| `enabled`             | boolean | **Yes**  | Whether liveness probe is enabled                                        |
 | `failureThreshold`    | integer | **Yes**  | The number of failed probes before the container is considered unhealthy |
 | `initialDelaySeconds` | integer | **Yes**  | The initial delay before starting the probe                              |
 | `intervalSeconds`     | integer | **Yes**  | The interval between probes                                              |
@@ -171,6 +172,7 @@ The readiness probe configuration
 
 | Property              | Type    | Required | Description                                                                |
 |-----------------------|---------|----------|----------------------------------------------------------------------------|
+| `enabled`             | boolean | **Yes**  | Whether readiness probe is enabled                                         |
 | `failureThreshold`    | integer | **Yes**  | The number of failed probes before the container is considered unhealthy   |
 | `initialDelaySeconds` | integer | **Yes**  | The initial delay before starting the probe                                |
 | `intervalSeconds`     | integer | **Yes**  | The interval between probes                                                |
@@ -186,6 +188,7 @@ The startup probe configuration
 
 | Property              | Type    | Required | Description                                                              |
 |-----------------------|---------|----------|--------------------------------------------------------------------------|
+| `enabled`             | boolean | **Yes**  | Whether startup probe is enabled                                         |
 | `failureThreshold`    | integer | **Yes**  | The number of failed probes before the container is considered unhealthy |
 | `initialDelaySeconds` | integer | **Yes**  | The initial delay before starting the probe                              |
 | `intervalSeconds`     | integer | **Yes**  | The interval between probes                                              |

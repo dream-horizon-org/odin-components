@@ -147,13 +147,3 @@ The resource requests for the container
 |----------|--------|----------|---------------------------------------------------------------|
 | `cpu`    | string | **Yes**  | The amount of CPU to request for the container, e.g. 0.5      |
 | `memory` | string | **Yes**  | The amount of memory to request for the container, e.g. 512Mi |
-
-
-
-### Running Application
-
-* Create an Intellij Run configuration
-* Pass operation name as command line argument
-* Pass following environment variables
-  * `COMPONENT_METADATA`: [componentMetadata.json](../example/dev_local_kubernetes/componentMetadata.json)
-  * `CONFIG`: merged json of [base_config.json](../example/dev_local_kubernetes/base_config.json) and [flavour_config.json](../example/dev_local_kubernetes/flavour_config.json). In the case of operation [operation_config.json](../example/stag_gcp_container/operation_config.json)
