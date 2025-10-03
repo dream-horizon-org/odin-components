@@ -24,8 +24,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** Using `gp3` as default locally would fail immediately since that StorageClass doesn't exist. The entire description references AWS-specific features (encryption, IOPS, AZ topology) that are irrelevant locally.
 
-**Schema location:** Lines 267-270
-
 ### 2. Backup Configuration
 
 | Aspect | AWS Container | Local Container |
@@ -35,11 +33,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 | **Authentication** | IAM/IRSA required | N/A |
 | **Validation** | Requires `s3Bucket` field when `backup.enabled: true` | Schema has no backup section |
 
-**Why it matters:** Backups are not relevant for local development environments. The aws_container schema **requires** `s3Bucket` field when backups are enabled (line 85-88), which would fail locally. Local development is ephemeral by nature.
-
-**Schema location:**
-- AWS: Lines 469-502 (entire backup section)
-- Local: **Removed entirely**
+**Why it matters:** Backups are not relevant for local development environments. The aws_container schema **requires** `s3Bucket` field when backups are enabled, which would fail locally. Local development is ephemeral by nature.
 
 ### 3. Metrics/Monitoring Configuration
 
@@ -51,9 +45,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** Monitoring infrastructure (Prometheus, Grafana) is not typically needed for local development. Adds unnecessary complexity and resource overhead to local environments.
 
-**Schema location:**
-- AWS: Lines 435-468 (entire metrics section)
-- Local: **Removed entirely**
 
 ### 4. Service Annotations
 
@@ -65,7 +56,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** AWS-specific annotation documentation would confuse local users who don't have AWS Load Balancer Controller.
 
-**Schema location:** Lines 514-521
 
 ### 5. Topology Spread Constraints
 
@@ -77,9 +67,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** Topology spread constraints are for multi-AZ production deployments. Local clusters are typically single-node; even multi-node local setups don't have multiple zones. Basic pod spreading is handled by `antiAffinity` which is sufficient for local testing.
 
-**Schema location:**
-- AWS: Lines 408-433 (topologySpreadConstraints section)
-- Local: **Removed entirely**
 
 ### 6. SecurityContext
 
@@ -91,9 +78,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** Security context customization is for compliance and organizational policies in production. Locally, the Opstree operator already sets secure defaults (runAsNonRoot: true, runAsUser: 1000) - users don't need to override these for local testing.
 
-**Schema location:**
-- AWS: Lines 632-651 (securityContext section)
-- Local: **Removed entirely**
 
 ### 7. Persistence Description
 
@@ -102,7 +86,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 | **Volume type** | "Uses EBS volumes in EKS, which are AZ-specific" | "Uses local storage provisioner (hostPath, local-path, standard)" |
 | **Topology notes** | Pods must be in same AZ as volumes | No AZ restrictions |
 
-**Schema location:** Line 260
 
 ### 8. NetworkPolicy
 
@@ -114,9 +97,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** Network policies are for production multi-tenant environments. Local single-user development doesn't need namespace-level network isolation.
 
-**Schema location:**
-- AWS: Lines 524-543 (networkPolicy section)
-- Local: **Removed entirely**
 
 ### 9. PodDisruptionBudget
 
@@ -128,9 +108,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** PDBs protect against disruptions during production cluster maintenance. Local clusters don't have rolling node upgrades or maintenance windows.
 
-**Schema location:**
-- AWS: Lines 567-583 (podDisruptionBudget section)
-- Local: **Removed entirely**
 
 ### 10. ServiceAccount
 
@@ -142,9 +119,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** ServiceAccount customization is for AWS IAM integration. Local environments don't have IAM; default ServiceAccount is always sufficient.
 
-**Schema location:**
-- AWS: Lines 584-589 (serviceAccount section)
-- Local: **Removed entirely**
 
 ### 11. PriorityClassName
 
@@ -156,9 +130,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** Priority classes control pod preemption during resource contention in multi-tenant clusters. Local development typically runs only a few workloads without resource competition.
 
-**Schema location:**
-- AWS: Lines 626-630 (priorityClassName section)
-- Local: **Removed entirely**
 
 ### 12. Tolerations
 
@@ -170,9 +141,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 **Why it matters:** Tolerations are used with taints to dedicate specific nodes for Redis (e.g., memory-optimized nodes, spot instances for replicas). Local clusters don't use taints for workload isolation or cost optimization.
 
-**Schema location:**
-- AWS: Lines 598-625 (tolerations section)
-- Local: **Removed entirely**
 
 ### 13. Node Selector
 
@@ -181,7 +149,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 | **Examples** | Memory-optimized r5 instances, spot vs on-demand | Generic node labels for local multi-node |
 | **Production guidance** | "Dedicate memory-optimized nodes, separate master (on-demand) from replicas (spot)" | Basic node pinning for local setups |
 
-**Schema location:** Lines 590-597
 
 ### 14. Service Type Description
 
@@ -190,7 +157,6 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 | **LoadBalancer** | "Creates AWS NLB for external access" | "Behavior depends on local k8s - may create external IP or be equivalent to NodePort" |
 | **Guidance** | "Always use internal NLB annotation" | "Use NodePort for access from host machine" |
 
-**Schema location:** Lines 508-512
 
 ## Why Symlink Would Fail
 
