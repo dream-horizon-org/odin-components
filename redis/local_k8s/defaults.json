@@ -1,5 +1,4 @@
 {
-  "namespace": "redis",
   "deploymentMode": "standalone",
   "master": {
     "resources": {
@@ -28,7 +27,7 @@
   },
   "persistence": {
     "enabled": true,
-    "storageClass": "standard",
+    "storageClass": "",
     "size": "10Gi",
     "rdb": {
       "enabled": true,
@@ -54,7 +53,6 @@
       }
     }
   },
-  "antiAffinity": "soft",
   "service": {
     "type": "ClusterIP",
     "annotations": {}

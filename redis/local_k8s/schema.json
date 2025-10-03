@@ -116,13 +116,6 @@
     }
   ],
   "properties": {
-    "namespace": {
-      "type": "string",
-      "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
-      "maxLength": 63,
-      "description": "Kubernetes namespace where Redis will be deployed. Namespace must follow Kubernetes naming conventions (lowercase alphanumeric and hyphens). If the namespace doesn't exist, it should be created before deployment. **Default: `redis`**.",
-      "default": "redis"
-    },
     "deploymentMode": {
       "type": "string",
       "enum": ["standalone", "sentinel", "cluster"],
@@ -247,8 +240,8 @@
         },
         "storageClass": {
           "type": "string",
-          "description": "Kubernetes StorageClass name for local persistent volumes. Common options: **`standard`** (default in many local k8s), **`local-path`** (Rancher local-path-provisioner for k3s/kind), **`hostpath`** (minikube default). StorageClass must exist in your local cluster. **Default: `standard`** (works with most local k8s distributions). **Local setup:** For kind/k3s, use `local-path`; for minikube, use `hostpath` or `standard`. See FLAVOUR_DIFFERENCES.md for why this differs from aws_k8s.",
-          "default": "standard"
+          "description": "Kubernetes StorageClass name for local persistent volumes. When empty (default), uses the cluster's default StorageClass automatically. Common local StorageClasses: **`standard`** (default in many local k8s), **`local-path`** (Rancher local-path-provisioner for k3s/kind), **`hostpath`** (minikube default). **Default: `\"\"` (empty - uses cluster default)**. **Note:** Most local Kubernetes distributions come with a pre-configured default StorageClass, so leaving this empty is recommended. Only specify explicitly if you need a non-default StorageClass. See FLAVOUR_DIFFERENCES.md for why this differs from aws_k8s.",
+          "default": ""
         },
         "size": {
           "type": "string",
@@ -380,12 +373,6 @@
         }
       },
       "required": ["numShards", "replicasPerShard"]
-    },
-    "antiAffinity": {
-      "type": "string",
-      "enum": ["soft", "required"],
-      "description": "Pod anti-affinity strategy controlling how Redis pods are distributed across Kubernetes nodes. Prevents multiple Redis pods (masters or replicas) from running on the same node for better availability during node failures. **Soft (preferredDuringScheduling):** Scheduler prefers spreading pods but will co-locate if necessary (e.g., insufficient nodes). **Required (requiredDuringScheduling):** Scheduler strictly enforces spreading, pods won't schedule if it violates anti-affinity. **Default: `soft`** (distribute when possible, don't block deployment). **Production:** Use required for strict HA guarantees in clusters with 3+ nodes; soft for smaller clusters or development.",
-      "default": "soft"
     },
     "service": {
       "type": "object",

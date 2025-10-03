@@ -1,5 +1,4 @@
 {
-  "namespace": "redis",
   "deploymentMode": "standalone",
   "master": {
     "resources": {

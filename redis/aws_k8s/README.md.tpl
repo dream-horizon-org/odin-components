@@ -40,26 +40,55 @@ Before enabling usage of this flavour of Redis, ensure:
    helm repo add ot-helm https://ot-container-kit.github.io/helm-charts/
    helm install redis-operator ot-helm/redis-operator -n redis-operator --create-namespace
    ```
-3. **Storage Class**: `gp3` StorageClass configured (or specify your own)
-   ```bash
-   kubectl get storageclass gp3
-   ```
-4. **AWS EBS CSI Driver**: Installed for persistent volume provisioning
+3. **AWS EBS CSI Driver**: Installed for persistent volume provisioning (required for gp3 volumes)
    ```bash
    kubectl get deployment ebs-csi-controller -n kube-system
    ```
+4. **Storage Class**: Recommended to create `gp3` StorageClass and set as default
+
+   **IMPORTANT:** EKS 1.30+ does not include a default StorageClass. You must either:
+   - Create a StorageClass and mark it as default, OR
+   - Explicitly specify `storageClass` in your Redis configuration
+
+   **Create gp3 StorageClass:**
+   ```bash
+   kubectl apply -f - <<EOF
+   apiVersion: storage.k8s.io/v1
+   kind: StorageClass
+   metadata:
+     name: gp3
+     annotations:
+       storageclass.kubernetes.io/is-default-class: "true"
+   provisioner: ebs.csi.aws.com
+   parameters:
+     type: gp3
+     encrypted: "true"  # Recommended for production
+   volumeBindingMode: WaitForFirstConsumer
+   allowVolumeExpansion: true
+   EOF
+   ```
+
+   Verify:
+   ```bash
+   kubectl get storageclass
+   ```
+
 5. **Optional - Prometheus Operator**: For ServiceMonitor-based metrics collection
 6. **Optional - IAM Role for Service Account (IRSA)**: For S3 backup access
 
 {{ .Markdown 2 }}
 
+## Configuration
+
+### Namespace
+
+**Note:** The Kubernetes namespace for Redis deployment is provided by `COMPONENT_METADATA` and does not need to be configured in the flavour schema.
+
 ## Configuration Examples
 
 ### Minimal Development Configuration (Default)
 ```json
-{
-  "namespace": "redis-dev"
-}
+{}
 ```
 This uses all defaults: standalone mode with a single Redis instance - perfect for development with minimal resources (1 pod).
 
@@ -78,7 +107,6 @@ const redis = new Redis({
 ### Custom Storage for Development
 ```json
 {
-  "namespace": "redis-dev",
   "persistence": {
     "size": "5Gi"
   }
@@ -91,7 +119,6 @@ Reduces storage to 5GB for even lower costs.
 ### Production Sentinel with Multi-AZ
 ```json
 {
-  "namespace": "redis-prod",
   "deploymentMode": "sentinel",
   "replicaCount": 2,
   "master": {
@@ -161,7 +188,6 @@ This creates a highly available production setup:
 ### Redis Cluster Mode (Horizontal Scaling)
 ```json
 {
-  "namespace": "redis-cluster",
   "deploymentMode": "cluster",
   "cluster": {
     "numShards": 3,
@@ -211,7 +237,6 @@ This creates a sharded Redis Cluster for horizontal scaling:
 ### External Access via Network Load Balancer
 ```json
 {
-  "namespace": "redis",
   "service": {
     "type": "LoadBalancer",
     "annotations": {
@@ -229,7 +254,6 @@ Exposes Redis via internal AWS Network Load Balancer for cross-VPC or on-premise
 ### Network Policy for Zero-Trust Security
 ```json
 {
-  "namespace": "redis",
   "networkPolicy": {
     "enabled": true,
     "allowedNamespaces": ["application", "backend-services"]
@@ -241,7 +265,6 @@ Restricts Redis access to only specified namespaces using Kubernetes NetworkPoli
 ### S3 Backups with IRSA
 ```json
 {
-  "namespace": "redis",
   "serviceAccount": "redis-backup-sa",
   "backup": {
     "enabled": true,

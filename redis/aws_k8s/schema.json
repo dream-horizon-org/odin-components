@@ -135,13 +135,6 @@
     }
   ],
   "properties": {
-    "namespace": {
-      "type": "string",
-      "pattern": "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$",
-      "maxLength": 63,
-      "description": "Kubernetes namespace where Redis will be deployed. Namespace must follow Kubernetes naming conventions (lowercase alphanumeric and hyphens). If the namespace doesn't exist, it should be created before deployment. **Default: `redis`**.",
-      "default": "redis"
-    },
     "deploymentMode": {
       "type": "string",
       "enum": ["standalone", "sentinel", "cluster"],
@@ -266,7 +259,7 @@
         },
         "storageClass": {
           "type": "string",
-          "description": "Kubernetes StorageClass name determining the EBS volume type and provisioning behavior. StorageClass must exist in the cluster and should use `volumeBindingMode: WaitForFirstConsumer` for topology-aware provisioning (ensures pod and volume are in same AZ). **Default: `gp3`** (AWS EBS gp3 volumes: 3000 IOPS, 125MB/s baseline, $0.08/GB-month). **Production:** Use gp3-encrypted (or create encrypted StorageClass with `encrypted: true` parameter) for data encryption at rest; io2 only for extreme IOPS needs. **Security:** For at-rest encryption, create StorageClass with `parameters.encrypted: 'true'` and optional `parameters.kmsKeyId` for customer-managed keys (required for HIPAA, PCI-DSS compliance). EBS encryption is free and transparent to Redis with zero performance impact.",
+          "description": "Kubernetes StorageClass name determining the EBS volume type and provisioning behavior. StorageClass must exist in the cluster and use `volumeBindingMode: WaitForFirstConsumer` for topology-aware provisioning (ensures pod and volume are in same AZ). **Default: `gp3`** (AWS EBS gp3 volumes: 3000 IOPS, 125MB/s baseline, $0.08/GB-month, 20% cheaper than gp2). **IMPORTANT:** EKS 1.30+ does not include a default StorageClass - you must create a `gp3` StorageClass (see Prerequisites) or specify a different one here. **Production:** Use gp3-encrypted StorageClass with `encrypted: 'true'` parameter for data encryption at rest; optionally specify `kmsKeyId` for customer-managed keys (required for HIPAA, PCI-DSS compliance). **Note:** Requires AWS EBS CSI driver installed. Set to empty string `\"\"` to use cluster default StorageClass if configured. EBS encryption is free and transparent to Redis with zero performance impact.",
           "default": "gp3"
         },
         "size": {

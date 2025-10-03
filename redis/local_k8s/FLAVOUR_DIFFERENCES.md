@@ -18,11 +18,15 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 
 | Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
-| **Default** | `gp3` | `standard` |
-| **Description** | References AWS EBS volumes (gp3, io2), IOPS, encryption, KMS | References local storage provisioners (local-path, hostpath, standard) |
-| **Validation** | Assumes EBS-specific StorageClass exists | Assumes local StorageClass exists |
+| **Default** | `gp3` | `""` (empty - uses cluster default) |
+| **Cluster Behavior** | EKS 1.30+ has NO default StorageClass - must be created | All local K8s distributions have pre-configured default StorageClass |
+| **Description** | References AWS EBS volumes (gp3, io2), IOPS, encryption, KMS, warns about EKS 1.30+ behavior | References local storage provisioners (local-path, hostpath, standard), explains empty uses cluster default |
+| **User Setup Required** | Must create gp3 StorageClass (see Prerequisites) | No setup required - works out-of-the-box |
 
-**Why it matters:** Using `gp3` as default locally would fail immediately since that StorageClass doesn't exist. The entire description references AWS-specific features (encryption, IOPS, AZ topology) that are irrelevant locally.
+**Why it matters:**
+- **AWS:** Explicit `gp3` default prevents deployment failures since EKS 1.30+ doesn't include a default StorageClass. Users must create the gp3 StorageClass as documented in Prerequisites.
+- **Local:** Empty string automatically uses cluster's default StorageClass, which exists in all local K8s distributions (kind uses `standard`, k3s uses `local-path`, etc.). No user action needed.
+- The entire description differs: AWS references EBS-specific features (encryption, IOPS, AZ topology, KMS keys) that are irrelevant locally.
 
 ### 2. Backup Configuration
 
@@ -142,7 +146,18 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 **Why it matters:** Tolerations are used with taints to dedicate specific nodes for Redis (e.g., memory-optimized nodes, spot instances for replicas). Local clusters don't use taints for workload isolation or cost optimization.
 
 
-### 13. Node Selector
+### 13. Anti-Affinity
+
+| Aspect | AWS K8s | Local K8s |
+|--------|---------------|-----------------|
+| **Feature** | Pod anti-affinity for spreading across nodes | **Not supported** |
+| **Use case** | Spread Redis pods across nodes for HA during node failures | N/A |
+| **Description** | Details soft/required strategies, node spreading behavior | Schema has no antiAffinity section |
+
+**Why it matters:** Anti-affinity prevents multiple Redis pods from running on the same node in production multi-node clusters. Local development typically runs on single-node clusters (kind, minikube, Docker Desktop) or small multi-node setups where pod spreading is not a concern for testing.
+
+
+### 14. Node Selector
 
 | Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
@@ -150,7 +165,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 | **Production guidance** | "Dedicate memory-optimized nodes, separate master (on-demand) from replicas (spot)" | Basic node pinning for local setups |
 
 
-### 14. Service Type Description
+### 15. Service Type Description
 
 | Aspect | AWS K8s | Local K8s |
 |--------|---------------|-----------------|
@@ -161,9 +176,10 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 ## Why Symlink Would Fail
 
 ### Immediate Technical Failures
-1. **Default `storageClass: "gp3"`** → StorageClass not found error locally
-2. **Backup validation requires S3 fields** → Schema validation failures when backups enabled locally
-3. **Incorrect documentation** → Users following AWS-specific steps that don't apply
+1. **AWS default `storageClass: "gp3"` would fail locally** → StorageClass not found error (gp3 doesn't exist in local K8s)
+2. **Local default `storageClass: ""` would fail on EKS 1.30+** → No default StorageClass exists, PVCs remain pending
+3. **Backup validation requires S3 fields** → Schema validation failures when backups enabled locally
+4. **Incorrect documentation** → Users following AWS-specific steps that don't apply locally
 
 ### User Experience Issues
 1. **Confusing guidance** → References to EBS, IRSA, NLB, AZs that don't exist locally
@@ -182,6 +198,7 @@ It might seem efficient to symlink the schema files since both flavours deploy R
 | Metrics/Monitoring | ❌ Different structure | ❌ AWS has metrics section, Local removed entirely |
 | Backup | ❌ Different structure | ❌ AWS has backup section, Local removed entirely |
 | TopologySpreadConstraints | ❌ Different structure | ❌ AWS has topologySpreadConstraints, Local removed entirely |
+| AntiAffinity | ❌ Different structure | ❌ AWS has antiAffinity, Local removed entirely |
 | SecurityContext | ❌ Different structure | ❌ AWS has securityContext, Local removed entirely |
 | NetworkPolicy | ❌ Different structure | ❌ AWS has networkPolicy, Local removed entirely |
 | PodDisruptionBudget | ❌ Different structure | ❌ AWS has podDisruptionBudget, Local removed entirely |

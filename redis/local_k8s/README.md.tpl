@@ -24,29 +24,6 @@ You need a local Kubernetes cluster. Choose one:
 
 - **Docker Desktop** - Enable Kubernetes in Docker Desktop settings
 
-### Storage Class
-Ensure your cluster has a StorageClass for persistent volumes:
-
-**For kind/k3s:**
-```bash
-# Install local-path provisioner (if not already installed)
-kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-
-# Set as default (optional)
-kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-```
-
-**For minikube:**
-```bash
-# Enable hostpath storage addon
-minikube addons enable storage-provisioner
-```
-
-Verify StorageClass:
-```bash
-kubectl get storageclass
-```
-
 ### Opstree Redis Operator
 Install the Redis Operator:
 ```bash
@@ -61,19 +38,26 @@ kubectl get pods -n ot-operators
 
 ## Configuration
 
-### Storage Class Selection
-Update `persistence.storageClass` in your config based on your local k8s:
+### Namespace
 
-- **kind/k3s**: Use `local-path`
-- **minikube**: Use `hostpath` or `standard`
-- **Docker Desktop**: Use `hostpath`
+**Note:** The Kubernetes namespace for Redis deployment is provided by `COMPONENT_METADATA` and does not need to be configured in the flavour schema.
 
-Example:
+### Storage Class
+By default, `persistence.storageClass` is empty (`""`), which means Kubernetes will automatically use your cluster's default StorageClass. This works out-of-the-box for most local Kubernetes distributions:
+
+- **kind**: Uses `standard` (rancher.io/local-path)
+- **k3s**: Uses `local-path`
+- **minikube**: Uses `standard` (k8s.io/minikube-hostpath)
+- **Docker Desktop**: Uses `hostpath`
+
+**You typically don't need to specify `storageClass`** - leave it empty to use the cluster default.
+
+Only specify explicitly if you need a non-default StorageClass:
 ```json
 {
   "persistence": {
     "enabled": true,
-    "storageClass": "local-path",  // Adjust based on your cluster
+    "storageClass": "local-path",  // Only if you need non-default
     "size": "10Gi"
   }
 }
@@ -194,7 +178,8 @@ kubectl run -it --rm redis-cli --image=redis:7 --restart=Never -- redis-cli -h r
 See [FLAVOUR_DIFFERENCES.md](./FLAVOUR_DIFFERENCES.md) for detailed explanation of differences between local_k8s and aws_k8s flavours.
 
 Key differences:
-- **Storage**: Local StorageClass (local-path/hostpath) vs AWS EBS (gp3)
+- **Storage**: Empty storageClass (uses cluster default automatically) vs `gp3` (must be created on EKS 1.30+)
+- **Setup Required**: None (pre-configured defaults) vs Must create StorageClass
 - **Load Balancing**: NodePort/port-forward vs AWS NLB
 - **IAM**: No IRSA integration locally
 - **Multi-AZ**: Single node/zone vs multi-AZ spreading
@@ -205,11 +190,9 @@ Key differences:
 ### Minimal Development Setup
 ```json
 {
-  "namespace": "redis",
   "deploymentMode": "standalone",
   "persistence": {
     "enabled": true,
-    "storageClass": "local-path",
     "size": "5Gi"
   },
   "service": {
@@ -217,11 +200,11 @@ Key differences:
   }
 }
 ```
+**Note:** `storageClass` is omitted - uses cluster default automatically.
 
 ### Local HA Testing Setup
 ```json
 {
-  "namespace": "redis",
   "deploymentMode": "sentinel",
   "replica": {
     "count": 2
@@ -232,11 +215,11 @@ Key differences:
   },
   "persistence": {
     "enabled": true,
-    "storageClass": "local-path",
     "size": "10Gi"
   }
 }
 ```
+**Note:** `storageClass` is omitted - uses cluster default automatically.
 
 ## Cleanup
 

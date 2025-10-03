@@ -40,18 +40,43 @@ Before enabling usage of this flavour of Redis, ensure:
    helm repo add ot-helm https://ot-container-kit.github.io/helm-charts/
    helm install redis-operator ot-helm/redis-operator -n redis-operator --create-namespace
    ```
-3. **Storage Class**: `gp3` StorageClass configured (or specify your own)
-   ```bash
-   kubectl get storageclass gp3
-   ```
-4. **AWS EBS CSI Driver**: Installed for persistent volume provisioning
+3. **AWS EBS CSI Driver**: Installed for persistent volume provisioning (required for gp3 volumes)
    ```bash
    kubectl get deployment ebs-csi-controller -n kube-system
    ```
+4. **Storage Class**: Recommended to create `gp3` StorageClass and set as default
+
+   **IMPORTANT:** EKS 1.30+ does not include a default StorageClass. You must either:
+   - Create a StorageClass and mark it as default, OR
+   - Explicitly specify `storageClass` in your Redis configuration
+
+   **Create gp3 StorageClass:**
+   ```bash
+   kubectl apply -f - <<EOF
+   apiVersion: storage.k8s.io/v1
+   kind: StorageClass
+   metadata:
+     name: gp3
+     annotations:
+       storageclass.kubernetes.io/is-default-class: "true"
+   provisioner: ebs.csi.aws.com
+   parameters:
+     type: gp3
+     encrypted: "true"  # Recommended for production
+   volumeBindingMode: WaitForFirstConsumer
+   allowVolumeExpansion: true
+   EOF
+   ```
+
+   Verify:
+   ```bash
+   kubectl get storageclass
+   ```
+
 5. **Optional - Prometheus Operator**: For ServiceMonitor-based metrics collection
 6. **Optional - IAM Role for Service Account (IRSA)**: For S3 backup access
 
-## Redis AWS Container (EKS) Flavour Configuration
+## Redis AWS K8s (EKS) Flavour Configuration
 
 ### Properties
 
@@ -64,7 +89,6 @@ Before enabling usage of this flavour of Redis, ensure:
 | `deploymentMode`            | string                                 | No       | Redis deployment topology determining high availability and scaling characteristics. **Standalone:** Single Redis instance with no automatic failover - simplest and most cost-effective for development, testing, and non-critical workloads. **Sentinel:** Master-replica topology with Sentinel processes for automatic failover (recommended for production HA). **Cluster:** Horizontal scaling with data sharding across multiple master nodes, each with replicas. Cluster mode requires `clusterModeEnabled: true` in root schema. **Default: `standalone`** (simplest, lowest cost for getting started). **Production:** Use sentinel for HA with single dataset, cluster for horizontal scaling needs. **IMPORTANT:** Changing deployment mode requires application code changes - see deployment modes documentation. Possible values are: `standalone`, `sentinel`, `cluster`. |
 | `master`                    | [object](#master)                      | No       | Resource allocation and configuration for Redis master node(s). The master handles all write operations and serves as the source of truth for data replication.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `metrics`                   | [object](#metrics)                     | No       | Prometheus metrics configuration using redis-exporter sidecar. Enables monitoring of Redis performance, memory usage, command statistics, replication lag, and cluster health. Essential for production observability.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `namespace`                 | string                                 | No       | Kubernetes namespace where Redis will be deployed. Namespace must follow Kubernetes naming conventions (lowercase alphanumeric and hyphens). If the namespace doesn't exist, it should be created before deployment. **Default: `redis`**.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `networkPolicy`             | [object](#networkpolicy)               | No       | Kubernetes NetworkPolicy for restricting network access to Redis pods using firewall rules at the pod level. Enables zero-trust security by allowing only specified namespaces/pods to connect on port 6379. Requires a CNI plugin that supports NetworkPolicy (Calico, Cilium, AWS VPC CNI with network policy support).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `nodeSelector`              | [object](#nodeselector)                | No       | Kubernetes node selector for constraining Redis pods to specific nodes based on labels. Use for dedicated Redis node pools, instance type selection (memory-optimized r5 instances), or cost optimization (spot vs on-demand). Format: key-value pairs matching node labels. **Production:** Use for dedicating memory-optimized nodes to Redis; separate master (on-demand) from replicas (spot).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `persistence`               | [object](#persistence)                 | No       | Persistent storage configuration using Kubernetes PersistentVolumeClaims (PVCs). Enables data durability across pod restarts. Uses EBS volumes in EKS, which are AZ-specific (pods must be in same AZ as their volumes).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -197,13 +221,13 @@ Persistent storage configuration using Kubernetes PersistentVolumeClaims (PVCs).
 
 #### Properties
 
-| Property       | Type           | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-|----------------|----------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `enabled`      | boolean        | **Yes**  | Enable persistent storage for Redis data. When true, creates PVCs for each Redis pod to store RDB/AOF files. When false, uses emptyDir (data lost on pod deletion). **Default: `true`** (data durability). **Production:** Always enable for any production data.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `aof`          | [object](#aof) | No       | Append-Only File (AOF) configuration for durable write logging. AOF logs every write operation, providing better durability than RDB. Slower to load on restart but minimal data loss (typically <1 second).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `rdb`          | [object](#rdb) | No       | Redis Database (RDB) snapshot configuration for point-in-time backups. RDB creates binary snapshots of the dataset at specified intervals. Faster to load than AOF but may lose data between snapshots.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `size`         | string         | No       | Size of persistent volume per Redis pod. Should be at least 2-3x expected dataset size to account for RDB snapshots, AOF files, and growth. Format: Mi, Gi, or Ti (e.g., '10Gi', '100Gi'). Supports volume expansion if StorageClass has `allowVolumeExpansion: true`. **Default: `10Gi`** (suitable for small datasets). **Production:** Calculate as (expected dataset size × 2.5) for RDB forks and AOF rewrites, plus growth buffer.                                                                                                                                                                                                                                                                                                                                                                       |
-| `storageClass` | string         | No       | Kubernetes StorageClass name determining the EBS volume type and provisioning behavior. StorageClass must exist in the cluster and should use `volumeBindingMode: WaitForFirstConsumer` for topology-aware provisioning (ensures pod and volume are in same AZ). **Default: `gp3`** (AWS EBS gp3 volumes: 3000 IOPS, 125MB/s baseline, $0.08/GB-month). **Production:** Use gp3-encrypted (or create encrypted StorageClass with `encrypted: true` parameter) for data encryption at rest; io2 only for extreme IOPS needs. **Security:** For at-rest encryption, create StorageClass with `parameters.encrypted: 'true'` and optional `parameters.kmsKeyId` for customer-managed keys (required for HIPAA, PCI-DSS compliance). EBS encryption is free and transparent to Redis with zero performance impact. |
+| Property       | Type           | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|----------------|----------------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`      | boolean        | **Yes**  | Enable persistent storage for Redis data. When true, creates PVCs for each Redis pod to store RDB/AOF files. When false, uses emptyDir (data lost on pod deletion). **Default: `true`** (data durability). **Production:** Always enable for any production data.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `aof`          | [object](#aof) | No       | Append-Only File (AOF) configuration for durable write logging. AOF logs every write operation, providing better durability than RDB. Slower to load on restart but minimal data loss (typically <1 second).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `rdb`          | [object](#rdb) | No       | Redis Database (RDB) snapshot configuration for point-in-time backups. RDB creates binary snapshots of the dataset at specified intervals. Faster to load than AOF but may lose data between snapshots.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `size`         | string         | No       | Size of persistent volume per Redis pod. Should be at least 2-3x expected dataset size to account for RDB snapshots, AOF files, and growth. Format: Mi, Gi, or Ti (e.g., '10Gi', '100Gi'). Supports volume expansion if StorageClass has `allowVolumeExpansion: true`. **Default: `10Gi`** (suitable for small datasets). **Production:** Calculate as (expected dataset size × 2.5) for RDB forks and AOF rewrites, plus growth buffer.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `storageClass` | string         | No       | Kubernetes StorageClass name determining the EBS volume type and provisioning behavior. StorageClass must exist in the cluster and use `volumeBindingMode: WaitForFirstConsumer` for topology-aware provisioning (ensures pod and volume are in same AZ). **Default: `gp3`** (AWS EBS gp3 volumes: 3000 IOPS, 125MB/s baseline, $0.08/GB-month, 20% cheaper than gp2). **IMPORTANT:** EKS 1.30+ does not include a default StorageClass - you must create a `gp3` StorageClass (see Prerequisites) or specify a different one here. **Production:** Use gp3-encrypted StorageClass with `encrypted: 'true'` parameter for data encryption at rest; optionally specify `kmsKeyId` for customer-managed keys (required for HIPAA, PCI-DSS compliance). **Note:** Requires AWS EBS CSI driver installed. Set to empty string `""` to use cluster default StorageClass if configured. EBS encryption is free and transparent to Redis with zero performance impact. |
 
 #### aof
 
@@ -392,13 +416,17 @@ Kubernetes StatefulSet update strategy controlling how Redis pods are updated du
 
 
 
+## Configuration
+
+### Namespace
+
+**Note:** The Kubernetes namespace for Redis deployment is provided by `COMPONENT_METADATA` and does not need to be configured in the flavour schema.
+
 ## Configuration Examples
 
 ### Minimal Development Configuration (Default)
 ```json
-{
-  "namespace": "redis-dev"
-}
+{}
 ```
 This uses all defaults: standalone mode with a single Redis instance - perfect for development with minimal resources (1 pod).
 
@@ -417,7 +445,6 @@ const redis = new Redis({
 ### Custom Storage for Development
 ```json
 {
-  "namespace": "redis-dev",
   "persistence": {
     "size": "5Gi"
   }
@@ -430,7 +457,6 @@ Reduces storage to 5GB for even lower costs.
 ### Production Sentinel with Multi-AZ
 ```json
 {
-  "namespace": "redis-prod",
   "deploymentMode": "sentinel",
   "replicaCount": 2,
   "master": {
@@ -500,7 +526,6 @@ This creates a highly available production setup:
 ### Redis Cluster Mode (Horizontal Scaling)
 ```json
 {
-  "namespace": "redis-cluster",
   "deploymentMode": "cluster",
   "cluster": {
     "numShards": 3,
@@ -550,7 +575,6 @@ This creates a sharded Redis Cluster for horizontal scaling:
 ### External Access via Network Load Balancer
 ```json
 {
-  "namespace": "redis",
   "service": {
     "type": "LoadBalancer",
     "annotations": {
@@ -568,7 +592,6 @@ Exposes Redis via internal AWS Network Load Balancer for cross-VPC or on-premise
 ### Network Policy for Zero-Trust Security
 ```json
 {
-  "namespace": "redis",
   "networkPolicy": {
     "enabled": true,
     "allowedNamespaces": ["application", "backend-services"]
@@ -580,7 +603,6 @@ Restricts Redis access to only specified namespaces using Kubernetes NetworkPoli
 ### S3 Backups with IRSA
 ```json
 {
-  "namespace": "redis",
   "serviceAccount": "redis-backup-sa",
   "backup": {
     "enabled": true,

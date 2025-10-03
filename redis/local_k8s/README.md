@@ -24,29 +24,6 @@ You need a local Kubernetes cluster. Choose one:
 
 - **Docker Desktop** - Enable Kubernetes in Docker Desktop settings
 
-### Storage Class
-Ensure your cluster has a StorageClass for persistent volumes:
-
-**For kind/k3s:**
-```bash
-# Install local-path provisioner (if not already installed)
-kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
-
-# Set as default (optional)
-kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-```
-
-**For minikube:**
-```bash
-# Enable hostpath storage addon
-minikube addons enable storage-provisioner
-```
-
-Verify StorageClass:
-```bash
-kubectl get storageclass
-```
-
 ### Opstree Redis Operator
 Install the Redis Operator:
 ```bash
@@ -61,19 +38,26 @@ kubectl get pods -n ot-operators
 
 ## Configuration
 
-### Storage Class Selection
-Update `persistence.storageClass` in your config based on your local k8s:
+### Namespace
 
-- **kind/k3s**: Use `local-path`
-- **minikube**: Use `hostpath` or `standard`
-- **Docker Desktop**: Use `hostpath`
+**Note:** The Kubernetes namespace for Redis deployment is provided by `COMPONENT_METADATA` and does not need to be configured in the flavour schema.
 
-Example:
+### Storage Class
+By default, `persistence.storageClass` is empty (`""`), which means Kubernetes will automatically use your cluster's default StorageClass. This works out-of-the-box for most local Kubernetes distributions:
+
+- **kind**: Uses `standard` (rancher.io/local-path)
+- **k3s**: Uses `local-path`
+- **minikube**: Uses `standard` (k8s.io/minikube-hostpath)
+- **Docker Desktop**: Uses `hostpath`
+
+**You typically don't need to specify `storageClass`** - leave it empty to use the cluster default.
+
+Only specify explicitly if you need a non-default StorageClass:
 ```json
 {
   "persistence": {
     "enabled": true,
-    "storageClass": "local-path",  // Adjust based on your cluster
+    "storageClass": "local-path",  // Only if you need non-default
     "size": "10Gi"
   }
 }
@@ -186,18 +170,16 @@ Test connection from within cluster:
 kubectl run -it --rm redis-cli --image=redis:7 --restart=Never -- redis-cli -h redis-master.<namespace>.svc.cluster.local ping
 ```
 
-## Redis Local Container (Local Kubernetes) Flavour Configuration
+## Redis Local K8s (Local Kubernetes) Flavour Configuration
 
 ### Properties
 
 | Property           | Type                        | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 |--------------------|-----------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `additionalConfig` | [object](#additionalconfig) | No       | Additional Redis configuration parameters to override defaults. Supports any redis.conf setting as key-value pairs. Common parameters: maxmemory-policy (eviction), tcp-keepalive, timeout, client-output-buffer-limit. Use for advanced tuning; most settings have sensible operator defaults.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `antiAffinity`     | string                      | No       | Pod anti-affinity strategy controlling how Redis pods are distributed across Kubernetes nodes. Prevents multiple Redis pods (masters or replicas) from running on the same node for better availability during node failures. **Soft (preferredDuringScheduling):** Scheduler prefers spreading pods but will co-locate if necessary (e.g., insufficient nodes). **Required (requiredDuringScheduling):** Scheduler strictly enforces spreading, pods won't schedule if it violates anti-affinity. **Default: `soft`** (distribute when possible, don't block deployment). **Production:** Use required for strict HA guarantees in clusters with 3+ nodes; soft for smaller clusters or development. Possible values are: `soft`, `required`.                                                                                                                                             |
 | `cluster`          | [object](#cluster)          | No       | Redis Cluster mode configuration for horizontal scaling through data sharding. **IMPORTANT:** This configuration is only valid when BOTH conditions are met: (1) `clusterModeEnabled: true` in root schema AND (2) `deploymentMode: cluster` in this flavour schema. This cross-schema dependency must be validated at the configuration composition layer. Distributes 16,384 hash slots across multiple master nodes for write scaling and larger datasets.                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `deploymentMode`   | string                      | No       | Redis deployment topology determining high availability and scaling characteristics. **Standalone:** Single Redis instance with no automatic failover - simplest and most cost-effective for development, testing, and non-critical workloads. **Sentinel:** Master-replica topology with Sentinel processes for automatic failover (recommended for production HA). **Cluster:** Horizontal scaling with data sharding across multiple master nodes, each with replicas. Cluster mode requires `clusterModeEnabled: true` in root schema. **Default: `standalone`** (simplest, lowest cost for getting started). **Production:** Use sentinel for HA with single dataset, cluster for horizontal scaling needs. **IMPORTANT:** Changing deployment mode requires application code changes - see deployment modes documentation. Possible values are: `standalone`, `sentinel`, `cluster`. |
 | `master`           | [object](#master)           | No       | Resource allocation and configuration for Redis master node(s). The master handles all write operations and serves as the source of truth for data replication.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `namespace`        | string                      | No       | Kubernetes namespace where Redis will be deployed. Namespace must follow Kubernetes naming conventions (lowercase alphanumeric and hyphens). If the namespace doesn't exist, it should be created before deployment. **Default: `redis`**.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `nodeSelector`     | [object](#nodeselector)     | No       | Kubernetes node selector for constraining Redis pods to specific nodes based on labels. For local k8s, useful for multi-node setups to pin Redis to specific nodes. Format: key-value pairs matching node labels.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `persistence`      | [object](#persistence)      | No       | Persistent storage configuration using Kubernetes PersistentVolumeClaims (PVCs). Enables data durability across pod restarts. Uses local storage provisioner (hostPath, local-path, or standard StorageClass depending on local k8s distribution).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `replica`          | [object](#replica)          | No       | Replica configuration for standalone or sentinel mode. Replicas serve read operations and provide failover redundancy. In sentinel mode, replicas enable automatic failover when master fails. **IMPORTANT:** This configuration is only valid for `deploymentMode: standalone` or `deploymentMode: sentinel`. For `deploymentMode: cluster`, use `cluster.replicasPerShard` instead. Configuration validation should enforce this constraint.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -275,13 +257,13 @@ Persistent storage configuration using Kubernetes PersistentVolumeClaims (PVCs).
 
 #### Properties
 
-| Property       | Type           | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-|----------------|----------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `enabled`      | boolean        | **Yes**  | Enable persistent storage for Redis data. When true, creates PVCs for each Redis pod to store RDB/AOF files. When false, uses emptyDir (data lost on pod deletion). **Default: `true`** (data durability). **Production:** Always enable for any production data.                                                                                                                                                                                                                                            |
-| `aof`          | [object](#aof) | No       | Append-Only File (AOF) configuration for durable write logging. AOF logs every write operation, providing better durability than RDB. Slower to load on restart but minimal data loss (typically <1 second).                                                                                                                                                                                                                                                                                                 |
-| `rdb`          | [object](#rdb) | No       | Redis Database (RDB) snapshot configuration for point-in-time backups. RDB creates binary snapshots of the dataset at specified intervals. Faster to load than AOF but may lose data between snapshots.                                                                                                                                                                                                                                                                                                      |
-| `size`         | string         | No       | Size of persistent volume per Redis pod. Should be at least 2-3x expected dataset size to account for RDB snapshots, AOF files, and growth. Format: Mi, Gi, or Ti (e.g., '10Gi', '100Gi'). **Default: `10Gi`** (suitable for small datasets). **Production:** Calculate as (expected dataset size × 2.5) for RDB forks and AOF rewrites, plus growth buffer.                                                                                                                                                 |
-| `storageClass` | string         | No       | Kubernetes StorageClass name for local persistent volumes. Common options: **`standard`** (default in many local k8s), **`local-path`** (Rancher local-path-provisioner for k3s/kind), **`hostpath`** (minikube default). StorageClass must exist in your local cluster. **Default: `standard`** (works with most local k8s distributions). **Local setup:** For kind/k3s, use `local-path`; for minikube, use `hostpath` or `standard`. See FLAVOUR_DIFFERENCES.md for why this differs from aws_k8s. |
+| Property       | Type           | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|----------------|----------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`      | boolean        | **Yes**  | Enable persistent storage for Redis data. When true, creates PVCs for each Redis pod to store RDB/AOF files. When false, uses emptyDir (data lost on pod deletion). **Default: `true`** (data durability). **Production:** Always enable for any production data.                                                                                                                                                                                                                                                                                                                                                                        |
+| `aof`          | [object](#aof) | No       | Append-Only File (AOF) configuration for durable write logging. AOF logs every write operation, providing better durability than RDB. Slower to load on restart but minimal data loss (typically <1 second).                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `rdb`          | [object](#rdb) | No       | Redis Database (RDB) snapshot configuration for point-in-time backups. RDB creates binary snapshots of the dataset at specified intervals. Faster to load than AOF but may lose data between snapshots.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `size`         | string         | No       | Size of persistent volume per Redis pod. Should be at least 2-3x expected dataset size to account for RDB snapshots, AOF files, and growth. Format: Mi, Gi, or Ti (e.g., '10Gi', '100Gi'). **Default: `10Gi`** (suitable for small datasets). **Production:** Calculate as (expected dataset size × 2.5) for RDB forks and AOF rewrites, plus growth buffer.                                                                                                                                                                                                                                                                             |
+| `storageClass` | string         | No       | Kubernetes StorageClass name for local persistent volumes. When empty (default), uses the cluster's default StorageClass automatically. Common local StorageClasses: **`standard`** (default in many local k8s), **`local-path`** (Rancher local-path-provisioner for k3s/kind), **`hostpath`** (minikube default). **Default: `""` (empty - uses cluster default)**. **Note:** Most local Kubernetes distributions come with a pre-configured default StorageClass, so leaving this empty is recommended. Only specify explicitly if you need a non-default StorageClass. See FLAVOUR_DIFFERENCES.md for why this differs from aws_k8s. |
 
 #### aof
 
@@ -432,7 +414,8 @@ Kubernetes StatefulSet update strategy controlling how Redis pods are updated du
 See [FLAVOUR_DIFFERENCES.md](./FLAVOUR_DIFFERENCES.md) for detailed explanation of differences between local_k8s and aws_k8s flavours.
 
 Key differences:
-- **Storage**: Local StorageClass (local-path/hostpath) vs AWS EBS (gp3)
+- **Storage**: Empty storageClass (uses cluster default automatically) vs `gp3` (must be created on EKS 1.30+)
+- **Setup Required**: None (pre-configured defaults) vs Must create StorageClass
 - **Load Balancing**: NodePort/port-forward vs AWS NLB
 - **IAM**: No IRSA integration locally
 - **Multi-AZ**: Single node/zone vs multi-AZ spreading
@@ -443,11 +426,9 @@ Key differences:
 ### Minimal Development Setup
 ```json
 {
-  "namespace": "redis",
   "deploymentMode": "standalone",
   "persistence": {
     "enabled": true,
-    "storageClass": "local-path",
     "size": "5Gi"
   },
   "service": {
@@ -455,11 +436,11 @@ Key differences:
   }
 }
 ```
+**Note:** `storageClass` is omitted - uses cluster default automatically.
 
 ### Local HA Testing Setup
 ```json
 {
-  "namespace": "redis",
   "deploymentMode": "sentinel",
   "replica": {
     "count": 2
@@ -470,11 +451,11 @@ Key differences:
   },
   "persistence": {
     "enabled": true,
-    "storageClass": "local-path",
     "size": "10Gi"
   }
 }
 ```
+**Note:** `storageClass` is omitted - uses cluster default automatically.
 
 ## Cleanup
 
