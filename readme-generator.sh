@@ -1,31 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-component=$1
-
-if [[ -z ${component} ]]; then
-  echo "Please provide the component name"
-  exit 1
-fi
-
 # Installs readme generator tool
 go install github.com/marcusolsson/json-schema-docs@v0.2.1
 
-# Generate root level README
-json-schema-docs -schema schema.json -template README.md.tpl > README.md
+echo "Starting README generation..."
 
-for flavour in *; do
-  if [[ ! -d ${flavour} || ! -f ${flavour}/schema.json ]]; then
-    continue
+# Find all schema.json files, excluding hidden directories
+# Process each schema.json and check if corresponding README.md.tpl exists
+
+while IFS= read -r schema_file; do
+  # Get the directory containing the schema.json
+  schema_dir=$(dirname "${schema_file}")
+
+  # Check if README.md.tpl exists in the same directory
+  template_file="${schema_dir}/README.md.tpl"
+
+  if [[ -f "${template_file}" ]]; then
+    echo "Generating ${schema_dir}/README.md"
+    json-schema-docs -schema "${schema_file}" -template "${template_file}" > "${schema_dir}/README.md"
+  else
+    echo -e "\033[0;31mERROR: Found ${schema_file} but missing ${template_file}\033[0m"
+    exit 1
   fi
-  # Generate flavour level README
-  json-schema-docs -schema ${flavour}/schema.json -template ${flavour}/README.md.tpl > ${flavour}/README.md
+done < <(find . -name "schema.json" -type f -not -path "*/.*/*")
 
-  if [[ -d ${flavour}/operations ]]; then
-    for operation in ${flavour}/operations/*; do
-        # Generate operation README
-        json-schema-docs -schema ${operation}/schema.json -template ${operation}/README.md.tpl > ${operation}/README.md
-      done
-  fi
-
-done
+echo "README generation complete!"
