@@ -2,6 +2,9 @@ package com.dream11.mysql.service;
 
 import com.dream11.mysql.Application;
 import com.dream11.mysql.client.RDSClient;
+import com.dream11.mysql.config.user.DeployConfig;
+import com.dream11.mysql.config.user.ReaderConfig;
+import com.dream11.mysql.config.user.WriterConfig;
 import com.dream11.mysql.exception.DBClusterNotFoundException;
 import com.dream11.mysql.exception.DBClusterParameterGroupNotFoundException;
 import com.dream11.mysql.exception.DBParameterGroupNotFoundException;
@@ -9,6 +12,7 @@ import com.dream11.mysql.state.State;
 import com.google.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +25,7 @@ import software.amazon.awssdk.services.rds.model.DBInstance;
 public class StateCorrectionService {
 
   @NonNull final RDSClient rdsClient;
+  @NonNull DeployConfig deployConfig;
 
   public void correctState() {
     State state = Application.getState();
@@ -72,22 +77,40 @@ public class StateCorrectionService {
 
     state.setWriterInstanceIdentifier(null);
     state.getReaderInstanceIdentifiers().clear();
+    Map<String, ReaderConfig> readers = new HashMap<>();
 
     for (DBClusterMember member : cluster.dbClusterMembers()) {
       String instanceIdentifier = member.dbInstanceIdentifier();
+      DBInstance instance = this.rdsClient.getDBInstance(instanceIdentifier);
+      String instanceType = instance.dbInstanceClass();
+      Integer promotionTier = instance.promotionTier();
 
       if (member.isClusterWriter()) {
         state.setWriterInstanceIdentifier(instanceIdentifier);
+        this.deployConfig.setWriter(
+            WriterConfig.builder().instanceType(instanceType).promotionTier(promotionTier).build());
         log.debug("Found writer instance: {}", instanceIdentifier);
       } else {
-        DBInstance instance = this.rdsClient.getDBInstance(instanceIdentifier);
-        String instanceType = instance.dbInstanceClass();
         state
             .getReaderInstanceIdentifiers()
             .computeIfAbsent(instanceType, k -> new ArrayList<>())
             .add(instanceIdentifier);
+        if (readers.containsKey(instanceType)) {
+          readers
+              .get(instanceType)
+              .setInstanceCount(readers.get(instanceType).getInstanceCount() + 1);
+        } else {
+          readers.put(
+              instanceType,
+              ReaderConfig.builder()
+                  .instanceCount(1)
+                  .instanceType(instanceType)
+                  .promotionTier(promotionTier)
+                  .build());
+        }
         log.debug("Found reader instance: {} of type: {}", instanceIdentifier, instanceType);
       }
     }
+    this.deployConfig.setReaders(new ArrayList<>(readers.values()));
   }
 }
