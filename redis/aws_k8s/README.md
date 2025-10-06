@@ -123,10 +123,125 @@ Deployment mode configuration determining Redis topology and high availability c
 
 #### Properties
 
-| Property | Type              | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-|----------|-------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `mode`   | string            | **Yes**  | Redis deployment topology. **Standalone:** Single Redis instance with optional read replicas (no automatic failover) - simplest and most cost-effective for development, testing, and non-critical workloads. **Sentinel:** Master-replica topology with Sentinel processes for automatic failover (recommended for production HA). **Cluster:** Horizontal scaling with data sharding across multiple master nodes, each with replicas. Cluster mode requires `clusterModeEnabled: true` in root schema. **Default: `standalone`** (simplest, lowest cost). **Production:** Use sentinel for HA with single dataset, cluster for horizontal scaling needs. **IMPORTANT:** Changing deployment mode requires application code changes. Possible values are: `standalone`, `sentinel`, `cluster`. |
-| `config` | [object](#config) | No       | Mode-specific configuration. Contents depend on deployment.mode: standalone/sentinel use replica and sentinel objects, cluster uses numShards and replicasPerShard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Property | Type              | Required                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|----------|-------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `mode`   | string            | **Yes**                                | Redis deployment topology. **Standalone:** Single Redis instance with optional read replicas (no automatic failover) - simplest and most cost-effective for development, testing, and non-critical workloads. **Sentinel:** Master-replica topology with Sentinel processes for automatic failover (recommended for production HA). **Cluster:** Horizontal scaling with data sharding across multiple master nodes, each with replicas. Cluster mode requires `clusterModeEnabled: true` in root schema. **Default: `standalone`** (simplest, lowest cost). **Production:** Use sentinel for HA with single dataset, cluster for horizontal scaling needs. **IMPORTANT:** Changing deployment mode requires application code changes. Possible values are: `standalone`, `sentinel`, `cluster`. |
+| `config` | [object](#config) | When `mode=cluster` or `mode=sentinel` | Mode-specific configuration. Contents depend on deployment.mode: standalone/sentinel use replica and sentinel objects, cluster uses numShards and replicasPerShard. See: [standalone](#config-standalone), [sentinel](#config-sentinel), [cluster](#config-cluster).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+
+#### config-cluster
+
+_Used when `mode = "cluster"`_
+
+##### Properties
+
+| Property           | Type   | Required | Description                                                                                                                                                                                      |
+|--------------------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `numShards`        | number | **Yes**  | Number of shards (master nodes) in Redis Cluster. Each shard handles a portion of the 16,384 hash slots. Minimum 3 required. **Default: `3`**. **Only valid when deployment.mode is 'cluster'**. |
+| `replicasPerShard` | number | **Yes**  | Number of replicas per shard in cluster mode. Total pods = numShards × (1 + replicasPerShard). **Default: `1`**. **Only valid when deployment.mode is 'cluster'**.                               |
+
+---
+
+#### config-sentinel
+
+_Used when `mode = "sentinel"`_
+
+##### Properties
+
+| Property   | Type                | Required | Description                                                                                                                                                                                                      |
+|------------|---------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `replica`  | [object](#replica)  | **Yes**  | Replica configuration for standalone or sentinel mode. Replicas serve read operations and provide failover redundancy. In sentinel mode, replicas enable automatic failover when master fails.                   |
+| `sentinel` | [object](#sentinel) | **Yes**  | Redis Sentinel configuration for high availability and automatic failover. Required when deployment.mode is 'sentinel'. Sentinel monitors master and replicas, performing automatic promotion when master fails. |
+
+###### replica
+
+Replica configuration for standalone or sentinel mode. Replicas serve read operations and provide failover redundancy. In sentinel mode, replicas enable automatic failover when master fails.
+
+**Properties**
+
+| Property    | Type                 | Required | Description                                                                                                                                                                                                                                                                                                                                                |
+|-------------|----------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `count`     | number               | **Yes**  | Number of read replicas for the Redis master. Replicas provide high availability through automatic failover (when using sentinel mode) and read scaling. Each replica maintains a full copy of the data. Valid range: 0-5. Set to 0 for standalone without HA. **Default: `0`** (no replicas). **Production:** Use 1-2 replicas with sentinel mode for HA. |
+| `resources` | [object](#resources) | **Yes**  | Kubernetes resource requests and limits for replica pods. Typically same as master since replicas maintain full data copies and may be promoted to master.                                                                                                                                                                                                 |
+
+**resources**
+
+Kubernetes resource requests and limits for replica pods. Typically same as master since replicas maintain full data copies and may be promoted to master.
+
+**Properties**
+
+| Property   | Type                | Required | Description |
+|------------|---------------------|----------|-------------|
+| `limits`   | [object](#limits)   | **Yes**  |             |
+| `requests` | [object](#requests) | **Yes**  |             |
+
+**limits**
+
+**Properties**
+
+| Property | Type   | Required | Description                                      |
+|----------|--------|----------|--------------------------------------------------|
+| `cpu`    | string | **Yes**  | Maximum CPU for replicas. **Default: `1000m`**.  |
+| `memory` | string | **Yes**  | Maximum memory for replicas. **Default: `2Gi`**. |
+
+**requests**
+
+**Properties**
+
+| Property | Type   | Required | Description                                                                              |
+|----------|--------|----------|------------------------------------------------------------------------------------------|
+| `cpu`    | string | **Yes**  | Minimum CPU guaranteed for replicas. **Default: `500m`**.                                |
+| `memory` | string | **Yes**  | Minimum memory guaranteed for replicas. Must hold full dataset copy. **Default: `1Gi`**. |
+
+###### sentinel
+
+Redis Sentinel configuration for high availability and automatic failover. Required when deployment.mode is 'sentinel'. Sentinel monitors master and replicas, performing automatic promotion when master fails.
+
+**Properties**
+
+| Property    | Type                 | Required | Description                                                                                                                                                         |
+|-------------|----------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `quorum`    | number               | **Yes**  | Minimum number of Sentinels that must agree master is down before initiating failover. Should be majority of sentinels (e.g., 2 for 3 sentinels). **Default: `2`**. |
+| `replicas`  | number               | **Yes**  | Number of Sentinel processes. Must be odd number (3, 5, 7) for proper quorum. **Default: `3`**. Possible values are: `3`, `5`, `7`.                                 |
+| `resources` | [object](#resources) | **Yes**  | Kubernetes resource allocation for Sentinel processes. Sentinels are lightweight, requiring minimal resources.                                                      |
+
+**resources**
+
+Kubernetes resource allocation for Sentinel processes. Sentinels are lightweight, requiring minimal resources.
+
+**Properties**
+
+| Property   | Type                | Required | Description |
+|------------|---------------------|----------|-------------|
+| `limits`   | [object](#limits)   | **Yes**  |             |
+| `requests` | [object](#requests) | **Yes**  |             |
+
+**limits**
+
+**Properties**
+
+| Property | Type   | Required | Description                                        |
+|----------|--------|----------|----------------------------------------------------|
+| `cpu`    | string | **Yes**  | Maximum CPU for Sentinel. **Default: `200m`**.     |
+| `memory` | string | **Yes**  | Maximum memory for Sentinel. **Default: `256Mi`**. |
+
+**requests**
+
+**Properties**
+
+| Property | Type   | Required | Description                                        |
+|----------|--------|----------|----------------------------------------------------|
+| `cpu`    | string | **Yes**  | Minimum CPU for Sentinel. **Default: `100m`**.     |
+| `memory` | string | **Yes**  | Minimum memory for Sentinel. **Default: `128Mi`**. |
+
+---
+
+#### config-standalone
+
+_Used when `mode = "standalone"`_
+
+No additional configuration required for standalone mode.
+
+---
 
 #### config
 
@@ -134,12 +249,12 @@ Mode-specific configuration. Contents depend on deployment.mode: standalone/sent
 
 ##### Properties
 
-| Property           | Type                | Required | Description                                                                                                                                                                                                      |
-|--------------------|---------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `numShards`        | number              | No       | Number of shards (master nodes) in Redis Cluster. Each shard handles a portion of the 16,384 hash slots. Minimum 3 required. **Default: `3`**. **Only valid when deployment.mode is 'cluster'**.                 |
-| `replica`          | [object](#replica)  | No       | Replica configuration for standalone or sentinel mode. Replicas serve read operations and provide failover redundancy. In sentinel mode, replicas enable automatic failover when master fails.                   |
-| `replicasPerShard` | number              | No       | Number of replicas per shard in cluster mode. Total pods = numShards × (1 + replicasPerShard). **Default: `1`**. **Only valid when deployment.mode is 'cluster'**.                                               |
-| `sentinel`         | [object](#sentinel) | No       | Redis Sentinel configuration for high availability and automatic failover. Required when deployment.mode is 'sentinel'. Sentinel monitors master and replicas, performing automatic promotion when master fails. |
+| Property           | Type                | Required             | Description                                                                                                                                                                                                      |
+|--------------------|---------------------|----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `numShards`        | number              | When `mode=cluster`  | Number of shards (master nodes) in Redis Cluster. Each shard handles a portion of the 16,384 hash slots. Minimum 3 required. **Default: `3`**. **Only valid when deployment.mode is 'cluster'**.                 |
+| `replicasPerShard` | number              | When `mode=cluster`  | Number of replicas per shard in cluster mode. Total pods = numShards × (1 + replicasPerShard). **Default: `1`**. **Only valid when deployment.mode is 'cluster'**.                                               |
+| `replica`          | [object](#replica)  | When `mode=sentinel` | Replica configuration for standalone or sentinel mode. Replicas serve read operations and provide failover redundancy. In sentinel mode, replicas enable automatic failover when master fails.                   |
+| `sentinel`         | [object](#sentinel) | When `mode=sentinel` | Redis Sentinel configuration for high availability and automatic failover. Required when deployment.mode is 'sentinel'. Sentinel monitors master and replicas, performing automatic promotion when master fails. |
 
 ##### replica
 
