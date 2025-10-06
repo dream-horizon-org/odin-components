@@ -18,8 +18,6 @@ public class Constants {
   public final String CLUSTER_PARAMETER_GROUP_SUFFIX = "cpg";
   public final String INSTANCE_PARAMETER_GROUP_SUFFIX = "ipg";
   public final String CLUSTER_SUFFIX = "cluster";
-  public final String WRITER_INSTANCE_PARAMETER_GROUP_SUFFIX = "wpg";
   public final String WRITER_INSTANCE_SUFFIX = "writer";
-  public final String READER_INSTANCE_PARAMETER_GROUP_SUFFIX = "rpg";
   public final String READER_INSTANCE_SUFFIX = "reader";
 }
