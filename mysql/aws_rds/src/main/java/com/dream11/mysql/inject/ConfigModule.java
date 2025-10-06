@@ -13,7 +13,7 @@ import lombok.NonNull;
 public class ConfigModule extends AbstractModule {
 
   @NonNull final ComponentMetadata componentMetadata;
-  @NonNull final DeployConfig deployConfig;
+  final DeployConfig deployConfig;
   @NonNull final RDSData rdsData;
   @NonNull final AwsAccountData awsAccountData;
 

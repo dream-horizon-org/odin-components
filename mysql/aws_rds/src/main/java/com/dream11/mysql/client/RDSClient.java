@@ -454,7 +454,7 @@ public class RDSClient {
     this.dbClient.deleteDBCluster(
         request -> {
           request.dbClusterIdentifier(clusterIdentifier);
-          if (!deletionConfig.getSkipFinalSnapshot()) {
+          if (deletionConfig != null && !deletionConfig.getSkipFinalSnapshot()) {
             request
                 .skipFinalSnapshot(false)
                 .finalDBSnapshotIdentifier(deletionConfig.getFinalSnapshotIdentifier());
@@ -468,7 +468,7 @@ public class RDSClient {
     this.dbClient.deleteDBInstance(
         request -> {
           request.dbInstanceIdentifier(instanceIdentifier);
-          if (!deletionConfig.getSkipFinalSnapshot()) {
+          if (deletionConfig != null && !deletionConfig.getSkipFinalSnapshot()) {
             request
                 .skipFinalSnapshot(false)
                 .finalDBSnapshotIdentifier(deletionConfig.getFinalSnapshotIdentifier());
