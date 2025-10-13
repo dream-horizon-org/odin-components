@@ -356,13 +356,6 @@ public class RDSClient {
     this.dbClient.rebootDBInstance(request);
   }
 
-  public void rebootDBCluster(String clusterIdentifier) {
-    RebootDbClusterRequest request =
-        RebootDbClusterRequest.builder().dbClusterIdentifier(clusterIdentifier).build();
-
-    this.dbClient.rebootDBCluster(request);
-  }
-
   public void createDBClusterParameterGroup(
       String clusterParameterGroupName, String version, Map<String, String> tags) {
     CreateDbClusterParameterGroupRequest request =
