@@ -260,7 +260,9 @@ public class RDSService {
           log.info("Deleting DB reader instance: {}", readerInstanceIdentifier);
           this.rdsClient.deleteDBInstance(
               readerInstanceIdentifier,
-              Application.getState().getDeployConfig().getDeletionConfig());
+              Application.getState().getDeployConfig() != null
+                  ? Application.getState().getDeployConfig().getDeletionConfig()
+                  : null);
           tasks.add(
               () -> {
                 log.info(
@@ -284,7 +286,9 @@ public class RDSService {
           "Deleting DB writer instance: {}", Application.getState().getWriterInstanceIdentifier());
       this.rdsClient.deleteDBInstance(
           Application.getState().getWriterInstanceIdentifier(),
-          Application.getState().getDeployConfig().getDeletionConfig());
+          Application.getState().getDeployConfig() != null
+              ? Application.getState().getDeployConfig().getDeletionConfig()
+              : null);
       tasks.add(
           () -> {
             log.info(
@@ -307,7 +311,9 @@ public class RDSService {
       log.info("Deleting DB cluster: {}", Application.getState().getClusterIdentifier());
       this.rdsClient.deleteDBCluster(
           Application.getState().getClusterIdentifier(),
-          Application.getState().getDeployConfig().getDeletionConfig());
+          Application.getState().getDeployConfig() != null
+              ? Application.getState().getDeployConfig().getDeletionConfig()
+              : null);
       log.info(
           "Waiting for DB cluster to become deleted: {}",
           Application.getState().getClusterIdentifier());
