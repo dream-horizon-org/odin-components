@@ -1,5 +1,5 @@
 {
-  "title": "Update operation schema",
+  "title": "Update ASG operation schema",
   "type": "object",
   "properties": {
     "asg": {

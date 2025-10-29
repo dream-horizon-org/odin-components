@@ -1,8 +1,8 @@
-## Update operation
+## Update ASG operation
 
 Update ASG
 
-### Update operation schema
+### Update ASG operation schema
 
 #### Properties
 

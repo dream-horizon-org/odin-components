@@ -15,11 +15,11 @@ public enum Operations {
   ROLLING_RESTART("rolling-restart"),
   SCALE("scale"),
   PASSIVE_DOWNSCALE("passive-downscale"),
-  UPDATE_STACK("update-stack"),
+  UPDATE_STACK("update-asg-stack"),
   REDEPLOY("redeploy"),
   REVERT("revert"),
   STATUS("status"),
-  UPDATE("update");
+  UPDATE_ASG("update-asg");
   final String value;
 
   public static Operations fromValue(String value) {

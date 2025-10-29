@@ -1,4 +1,4 @@
-name: Application Local Kubernetes CI
+name: Application AWS EC2 CI
 
 on:
   pull_request:
