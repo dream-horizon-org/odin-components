@@ -1,15 +1,12 @@
 package com.dream11.application.aws;
 
 import com.dream11.application.config.user.LoadBalancerConfig;
-import com.dream11.application.constant.Constants;
 import com.dream11.application.constant.Protocol;
-import com.dream11.application.entity.ProvisionedCapacityResponse;
 import com.dream11.application.error.ApplicationError;
 import com.dream11.application.exception.GenericApplicationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -142,28 +139,5 @@ public class ClassicLoadBalancerClient {
     return this.loadBalancingClient
         .describeInstanceHealth(request -> request.loadBalancerName(loadBalancerName))
         .instanceStates();
-  }
-
-  @SneakyThrows
-  public ProvisionedCapacityResponse.ProvisionedCapacity getProvisionedCapacity(
-      String loadBalancerName) {
-    // LCU feature disabled — return a default provisioned capacity response with 0 LCUs and
-    // PROVISIONED status.
-    log.info(
-        "LCU feature disabled; returning default ProvisionedCapacity for loadBalancerName:{}",
-        loadBalancerName);
-    return ProvisionedCapacityResponse.ProvisionedCapacity.builder()
-        .lcu(0)
-        .status(Constants.LCU_PROVISIONED_STATUS)
-        .build();
-  }
-
-  @SneakyThrows
-  public void modifyProvisionedCapacity(String loadBalancerName, Integer lcu) {
-    // LCU scaling feature has been disabled — skip making the AWS API call.
-    log.info(
-        "LCU scaling disabled; skipping ModifyProvisionedCapacity for loadBalancerName:{} and requested LCU:{}",
-        loadBalancerName,
-        lcu);
   }
 }

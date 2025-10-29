@@ -239,9 +239,6 @@ public class DeploymentService {
     if (Objects.nonNull(pair.getLeft())) {
       // Application/Network load balancer
       this.loadBalancerService.scaleLcu(pair.getLeft(), lcu);
-    } else if (Objects.nonNull(pair.getRight())) {
-      // Classic load balancer
-      this.classicLoadBalancerService.scaleLcu(pair.getRight(), lcu);
     }
     return pair;
   }
@@ -352,17 +349,13 @@ public class DeploymentService {
   public List<Callable<Boolean>> createAllLcuWaitTasks(List<Pair<String, String>> lbsWithLcu) {
     List<Callable<Boolean>> tasks = new ArrayList<>();
     List<String> lbArns = new ArrayList<>();
-    List<String> lbNames = new ArrayList<>();
     lbsWithLcu.forEach(
         pair -> {
           if (Objects.nonNull(pair.getLeft())) {
             lbArns.add(pair.getLeft());
           }
-          if (Objects.nonNull(pair.getRight())) {
-            lbNames.add(pair.getRight());
-          }
         });
-    log.info("Waiting for LCU provisioning in LB Names:{} and LB ARNs:{}", lbNames, lbArns);
+    log.info("Waiting for LCU provisioning in LB ARNs:{}", lbArns);
     lbArns.forEach(
         lbArn ->
             tasks.add(
@@ -371,14 +364,6 @@ public class DeploymentService {
                         () -> this.loadBalancerService.getLcu(lbArn).getStatus(),
                         Constants.WAIT_FOR_LCU_PROVISIONING_DURATION,
                         this.loadBalancerService.getLcu(lbArn).getLcu())));
-    lbNames.forEach(
-        lbName ->
-            tasks.add(
-                () ->
-                    this.waitForLcuProvisioning(
-                        () -> this.classicLoadBalancerService.getLcu(lbName).getStatus(),
-                        Constants.WAIT_FOR_LCU_PROVISIONING_DURATION,
-                        this.classicLoadBalancerService.getLcu(lbName).getLcu())));
     return tasks;
   }
 
@@ -619,10 +604,6 @@ public class DeploymentService {
               if (Objects.nonNull(lbArnOrName.getLeft())) {
                 currentLcus.put(
                     identifier, this.loadBalancerService.getLcu(lbArnOrName.getLeft()).getLcu());
-              } else if (Objects.nonNull(lbArnOrName.getRight())) {
-                currentLcus.put(
-                    identifier,
-                    this.classicLoadBalancerService.getLcu(lbArnOrName.getRight()).getLcu());
               }
             });
     return currentLcus;

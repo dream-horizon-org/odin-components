@@ -12,7 +12,6 @@ import com.dream11.application.config.user.DeployConfig;
 import com.dream11.application.config.user.HealthCheckConfig;
 import com.dream11.application.config.user.LoadBalancerConfig;
 import com.dream11.application.constant.Constants;
-import com.dream11.application.constant.LoadBalancerType;
 import com.dream11.application.constant.Protocol;
 import com.dream11.application.entity.CloudWatchMetric;
 import com.dream11.application.entity.ProvisionedCapacityResponse;
@@ -370,22 +369,11 @@ public class LoadBalancerService {
   }
 
   public void scaleLcu(String loadBalancerArn, Integer lcu) {
-    if (this.deployConfig.getLoadBalancerConfig().getType() == LoadBalancerType.NLB) {
-      log.debug("Skipping LCU scaling for network load balancer");
-      return;
-    }
     this.loadBalancerClient.modifyProvisionedCapacity(loadBalancerArn, lcu);
     log.info("Scaled load balancer:[{}] LCU to [{}]", loadBalancerArn, lcu);
   }
 
   public ProvisionedCapacityResponse.ProvisionedCapacity getLcu(String loadBalancerArn) {
-    if (this.deployConfig.getLoadBalancerConfig().getType() == LoadBalancerType.NLB) {
-      log.debug("Returning default lcu response for network load balancer");
-      return ProvisionedCapacityResponse.ProvisionedCapacity.builder()
-          .lcu(0)
-          .status(Constants.LCU_PROVISIONED_STATUS)
-          .build();
-    }
     ProvisionedCapacityResponse.ProvisionedCapacity capacity =
         this.loadBalancerClient.getProvisionedCapacity(loadBalancerArn);
     log.debug("Provisioned capacity for load balancer:[{}] is:[{}]", loadBalancerArn, capacity);

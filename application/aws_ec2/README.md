@@ -126,10 +126,10 @@ Load balancer capacity units
 
 ###### Properties
 
-| Property   | Type   | Required | Description                                             |
-|------------|--------|----------|---------------------------------------------------------|
-| `external` | number | **Yes**  | Load balancer capacity units for external load balancer |
-| `internal` | number | **Yes**  | Load balancer capacity units for internal load balancer |
+| Property   | Type   | Required | Description                                                                     |
+|------------|--------|----------|---------------------------------------------------------------------------------|
+| `external` | number | **Yes**  | Load balancer capacity units for external load balancer, not applicable for clb |
+| `internal` | number | **Yes**  | Load balancer capacity units for internal load balancer, not applicable for clb |
 
 ##### listeners
 

@@ -11,7 +11,6 @@ import com.dream11.application.config.user.DeployConfig;
 import com.dream11.application.config.user.LoadBalancerConfig;
 import com.dream11.application.constant.Constants;
 import com.dream11.application.entity.CloudWatchMetric;
-import com.dream11.application.entity.ProvisionedCapacityResponse;
 import com.dream11.application.error.ApplicationError;
 import com.dream11.application.exception.GenericApplicationException;
 import com.dream11.application.state.LoadBalancerState;
@@ -169,18 +168,6 @@ public class ClassicLoadBalancerService {
     long instances = this.classicLoadBalancerClient.describeInstanceHealth(loadBalancerName).size();
     log.debug("Number of instances in load balancer:[{}] is {}", loadBalancerName, instances);
     return instances;
-  }
-
-  public void scaleLcu(String loadBalancerName, Integer lcu) {
-    this.classicLoadBalancerClient.modifyProvisionedCapacity(loadBalancerName, lcu);
-    log.info("Scaled load balancer:[{}] LCU to [{}]", loadBalancerName, lcu);
-  }
-
-  public ProvisionedCapacityResponse.ProvisionedCapacity getLcu(String loadBalancerName) {
-    ProvisionedCapacityResponse.ProvisionedCapacity capacity =
-        this.classicLoadBalancerClient.getProvisionedCapacity(loadBalancerName);
-    log.debug("Provisioned capacity for load balancer:[{}] is:[{}]", loadBalancerName, capacity);
-    return capacity;
   }
 
   private Double getMetrics(String loadBalancerName, String metric, Instant startTime) {

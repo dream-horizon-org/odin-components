@@ -136,21 +136,13 @@ public class LoadBalancerClient {
 
   @SneakyThrows
   public void modifyProvisionedCapacity(String loadBalancerArn, Integer lcu) {
-    // LCU scaling feature has been disabled — skip making the AWS API call.
-    log.info(
-        "LCU scaling disabled; skipping ModifyProvisionedCapacity for loadBalancerArn:{} and requested LCU:{}",
-        loadBalancerArn,
-        lcu);
+    // TODO Implement modifyProvisionedCapacity
   }
 
   @SneakyThrows
   public ProvisionedCapacityResponse.ProvisionedCapacity getProvisionedCapacity(
       String loadBalancerArn) {
-    // LCU feature disabled — return a default provisioned capacity response with 0 LCUs and
-    // PROVISIONED status.
-    log.info(
-        "LCU feature disabled; returning default ProvisionedCapacity for loadBalancerArn:{}",
-        loadBalancerArn);
+    // TODO Implement getProvisionedCapacity
     return ProvisionedCapacityResponse.ProvisionedCapacity.builder()
         .lcu(0)
         .status(Constants.LCU_PROVISIONED_STATUS)
