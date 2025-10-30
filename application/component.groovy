@@ -151,5 +151,15 @@ Odin.component {
             run "CONFIG='${getOperationConfigWithDefaults()}' bash operation.sh scale"
             out "cat state.json"
         }
+
+        operate {
+            name "update-asg"
+            String lastState = getLastState()
+            if (lastState != null && !lastState.isEmpty()) {
+                run "echo '${lastState}' > state.json"
+            }
+            run "CONFIG='${getOperationConfigWithDefaults()}' bash operation.sh update-asg"
+            out "cat state.json"
+        }
     }
 }

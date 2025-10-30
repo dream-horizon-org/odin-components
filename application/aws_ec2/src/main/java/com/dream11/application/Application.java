@@ -254,7 +254,7 @@ public class Application {
             yield Redeploy.class;
           }
           case STATUS -> Status.class;
-          case UPDATE -> {
+          case UPDATE_ASG -> {
             this.deployConfig = this.deployConfig.mergeWith(this.config);
             yield Update.class;
           }
