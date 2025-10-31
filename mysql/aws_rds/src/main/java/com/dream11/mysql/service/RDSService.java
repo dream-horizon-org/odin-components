@@ -212,13 +212,14 @@ public class RDSService {
               .computeIfAbsent(instanceType, k -> new ArrayList<>())
               .add(readerInstanceIdentifier);
 
+          final String finalReaderInstanceIdentifier = readerInstanceIdentifier;
           tasks.add(
               () -> {
                 log.info(
                     "Waiting for DB reader instance to become available: {}",
-                    readerInstanceIdentifier);
-                this.rdsClient.waitUntilDBInstanceAvailable(readerInstanceIdentifier);
-                log.info("DB reader instance is now available: {}", readerInstanceIdentifier);
+                    finalReaderInstanceIdentifier);
+                this.rdsClient.waitUntilDBInstanceAvailable(finalReaderInstanceIdentifier);
+                log.info("DB reader instance is now available: {}", finalReaderInstanceIdentifier);
                 return null;
               });
         }
@@ -263,7 +264,13 @@ public class RDSService {
                   "Waiting for DB reader instance to become deleted: {}", readerInstanceIdentifier);
               this.rdsClient.waitUntilDBInstanceDeleted(readerInstanceIdentifier);
               log.info("DB reader instance is now deleted: {}", readerInstanceIdentifier);
-              Application.getState().getReaderInstanceIdentifiers().remove(key);
+              Application.getState()
+                  .getReaderInstanceIdentifiers()
+                  .get(key)
+                  .remove(readerInstanceIdentifier);
+              if (Application.getState().getReaderInstanceIdentifiers().get(key).isEmpty()) {
+                Application.getState().getReaderInstanceIdentifiers().remove(key);
+              }
               return null;
             });
       }

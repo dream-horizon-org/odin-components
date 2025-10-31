@@ -338,6 +338,9 @@
           }
         }
       ],
+      "required": [
+        "skipFinalSnapshot"
+      ],
       "additionalProperties": false
     },
     "tags": {
@@ -439,6 +442,9 @@
                 ]
               }
             }
+          ],
+          "required": [
+            "enabled"
           ],
           "additionalProperties": false
         },

@@ -276,7 +276,8 @@ public class RDSClient {
           requestBuilder::performanceInsightsRetentionPeriod,
           instanceConfig.getPerformanceInsightsRetentionPeriod());
 
-      if (instanceConfig.getEnhancedMonitoring().getEnabled()) {
+      if (instanceConfig.getEnhancedMonitoring() != null
+          && instanceConfig.getEnhancedMonitoring().getEnabled()) {
         requestBuilder
             .monitoringInterval(instanceConfig.getEnhancedMonitoring().getInterval())
             .monitoringRoleArn(instanceConfig.getEnhancedMonitoring().getMonitoringRoleArn());
