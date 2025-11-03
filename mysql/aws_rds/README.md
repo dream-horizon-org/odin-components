@@ -171,7 +171,7 @@ Configuration for the primary (writer) DB instance. The writer is the single rea
 
 
 
-### Running Application
+### Running Mysql
 
 * Create an Intellij Run configuration
 * Pass operation name as command line argument
