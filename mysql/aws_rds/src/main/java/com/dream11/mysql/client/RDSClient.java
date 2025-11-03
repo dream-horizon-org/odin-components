@@ -293,7 +293,7 @@ public class RDSClient {
     try (RdsWaiter waiter =
         RdsWaiter.builder()
             .client(this.dbClient)
-            .overrideConfiguration(config -> config.maxAttempts(60))
+            .overrideConfiguration(config -> config.waitTimeout(Constants.DB_WAIT_RETRY_TIMEOUT))
             .build()) {
       waitAction.accept(waiter);
     } catch (Exception e) {

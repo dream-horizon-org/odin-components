@@ -123,7 +123,7 @@ public class RDSService {
       String name, String identifier, Map<String, String> tags, String clusterParameterGroupName) {
     String clusterIdentifier = Application.getState().getClusterIdentifier();
     if (clusterIdentifier == null) {
-      clusterIdentifier = ApplicationUtil.joinByHyphen(name, Constants.CLUSTER_SUFFIX, identifier);
+      clusterIdentifier = ApplicationUtil.joinByHyphen(name, identifier);
       List<String> endpoints;
       String snapshotIdentifier = this.deployConfig.getSnapshotIdentifier();
       if (snapshotIdentifier != null) {
@@ -165,8 +165,8 @@ public class RDSService {
     List<Callable<Void>> tasks = new ArrayList<>();
 
     if (Application.getState().getWriterInstanceIdentifier() == null) {
-      String writerInstanceIdentifier =
-          ApplicationUtil.joinByHyphen(name, Constants.WRITER_INSTANCE_SUFFIX, identifier);
+      String instanceId = ApplicationUtil.generateRandomId(4);
+      String writerInstanceIdentifier = ApplicationUtil.joinByHyphen(name, instanceId, identifier);
       log.info("Creating DB writer instance: {}", writerInstanceIdentifier);
       this.rdsClient.createDBInstance(
           writerInstanceIdentifier,
@@ -209,8 +209,7 @@ public class RDSService {
         for (int j = stateInstanceCount; j < instanceCount; j++) {
           String instanceId = ApplicationUtil.generateRandomId(4);
           String readerInstanceIdentifier =
-              ApplicationUtil.joinByHyphen(
-                  name, Constants.READER_INSTANCE_SUFFIX, instanceId, identifier);
+              ApplicationUtil.joinByHyphen(name, instanceId, identifier);
           log.info("Creating MySQL reader instance: {}", readerInstanceIdentifier);
           this.rdsClient.createDBInstance(
               readerInstanceIdentifier,
@@ -277,8 +276,7 @@ public class RDSService {
         for (int j = 0; j < instanceCount; j++) {
           String instanceId = ApplicationUtil.generateRandomId(4);
           String readerInstanceIdentifier =
-              ApplicationUtil.joinByHyphen(
-                  name, Constants.READER_INSTANCE_SUFFIX, instanceId, identifier);
+              ApplicationUtil.joinByHyphen(name, instanceId, identifier);
           log.info("Creating DB reader instance: {}", readerInstanceIdentifier);
           this.rdsClient.createDBInstance(
               readerInstanceIdentifier,
@@ -288,23 +286,6 @@ public class RDSService {
               instanceType,
               promotionTier,
               deployConfig.getInstanceConfig());
-          Application.getState()
-              .getReaderInstanceIdentifiers()
-              .computeIfAbsent(instanceType, k -> new ArrayList<>())
-              .add(readerInstanceIdentifier);
-          if (readersMap.containsKey(instanceType)) {
-            readersMap
-                .get(instanceType)
-                .setInstanceCount(readersMap.get(instanceType).getInstanceCount() + 1);
-          } else {
-            readersMap.put(
-                instanceType,
-                ReaderConfig.builder()
-                    .instanceCount(1)
-                    .instanceType(instanceType)
-                    .promotionTier(promotionTier)
-                    .build());
-          }
 
           tasks.add(
               () -> {
@@ -361,22 +342,10 @@ public class RDSService {
                   removeCount, instanceType, existingInstances.size()));
         }
 
-        Integer existingInstanceCount = existingInstances.size();
-
         for (int i = 0; i < removeCount; i++) {
-          String instanceToRemove = existingInstances.get(existingInstanceCount - 1);
+          String instanceToRemove = existingInstances.get(existingInstances.size() - 1);
           log.info("Removing DB reader instance: {}", instanceToRemove);
           this.rdsClient.deleteDBInstance(instanceToRemove, deployConfig.getDeletionConfig());
-          existingInstances.remove(existingInstanceCount - 1);
-          if (existingInstances.isEmpty()) {
-            readerInstances.remove(instanceType);
-          }
-          readersMap
-              .get(instanceType)
-              .setInstanceCount(readersMap.get(instanceType).getInstanceCount() - 1);
-          if (readersMap.get(instanceType).getInstanceCount() <= 0) {
-            readersMap.remove(instanceType);
-          }
 
           tasks.add(
               () -> {
