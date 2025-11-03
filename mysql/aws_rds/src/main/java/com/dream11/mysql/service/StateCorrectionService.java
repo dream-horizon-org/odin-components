@@ -79,12 +79,14 @@ public class StateCorrectionService {
       String instanceType = instance.dbInstanceClass();
       Integer promotionTier = instance.promotionTier();
 
-
       if (member.isClusterWriter().equals(Boolean.TRUE)) {
         state.setWriterInstanceIdentifier(instanceIdentifier);
         if (state.getDeployConfig() != null) {
           this.deployConfig.setWriter(
-              WriterConfig.builder().instanceType(instanceType).promotionTier(promotionTier).build());
+              WriterConfig.builder()
+                  .instanceType(instanceType)
+                  .promotionTier(promotionTier)
+                  .build());
         }
         log.debug("Found writer instance: {}", instanceIdentifier);
       } else {
