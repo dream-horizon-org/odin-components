@@ -15,8 +15,10 @@ import com.dream11.mysql.exception.GenericApplicationException;
 import com.dream11.mysql.inject.AwsModule;
 import com.dream11.mysql.inject.ConfigModule;
 import com.dream11.mysql.inject.OptionalConfigModule;
-import com.dream11.mysql.operation.*;
+import com.dream11.mysql.operation.AddReaders;
+import com.dream11.mysql.operation.Deploy;
 import com.dream11.mysql.operation.Operation;
+import com.dream11.mysql.operation.RemoveReaders;
 import com.dream11.mysql.operation.Undeploy;
 import com.dream11.mysql.state.State;
 import com.dream11.mysql.util.ApplicationUtil;
@@ -147,6 +149,7 @@ public class Application {
   @SneakyThrows
   void executeOperation() {
     Class<? extends Operation> operationClass;
+    this.deployConfig = Application.getState().getDeployConfig();
     List<Module> modules = new ArrayList<>();
     operationClass =
         switch (Operations.fromValue(this.operationName)) {
@@ -185,9 +188,7 @@ public class Application {
     }
     modules.addAll(this.getGuiceModules());
     this.initializeGuiceModules(modules).getInstance(operationClass).execute();
-    if (Operations.fromValue(this.operationName).equals(Operations.DEPLOY)) {
-      Application.getState().setDeployConfig(this.deployConfig);
-    }
+    Application.getState().setDeployConfig(this.deployConfig);
     log.info("Executed operation:[{}]", Operations.fromValue(this.operationName));
   }
 
@@ -217,19 +218,16 @@ public class Application {
         Application.getObjectMapper().readTree(System.getenv(Constants.COMPONENT_METADATA));
     this.componentMetadata =
         Application.getObjectMapper().treeToValue(node, ComponentMetadata.class);
-    this.componentMetadata.validate();
     this.awsAccountData =
         Application.getObjectMapper()
             .convertValue(
                 this.componentMetadata.getCloudProviderDetails().getAccount().getData(),
                 AwsAccountData.class);
-    this.awsAccountData.validate();
     this.rdsData =
         ApplicationUtil.getServiceWithCategory(
             this.componentMetadata.getCloudProviderDetails().getAccount().getServices(),
             Constants.RDS_CATEGORY,
             RDSData.class);
-    this.rdsData.validate();
     this.config = System.getenv(Constants.CONFIG);
   }
 

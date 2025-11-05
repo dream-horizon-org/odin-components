@@ -207,7 +207,7 @@ public class RDSService {
 
         for (int j = stateInstanceCount; j < instanceCount; j++) {
           String instanceId = ApplicationUtil.generateRandomId(4);
-          String readerInstanceIdentifier =
+          final String readerInstanceIdentifier =
               ApplicationUtil.joinByHyphen(name, instanceId, identifier);
           log.info("Creating MySQL reader instance: {}", readerInstanceIdentifier);
           this.rdsClient.createDBInstance(
@@ -223,14 +223,13 @@ public class RDSService {
               .computeIfAbsent(instanceType, k -> new ArrayList<>())
               .add(readerInstanceIdentifier);
 
-          final String finalReaderInstanceIdentifier = readerInstanceIdentifier;
           tasks.add(
               () -> {
                 log.info(
                     "Waiting for DB reader instance to become available: {}",
-                    finalReaderInstanceIdentifier);
-                this.rdsClient.waitUntilDBInstanceAvailable(finalReaderInstanceIdentifier);
-                log.info("DB reader instance is now available: {}", finalReaderInstanceIdentifier);
+                    readerInstanceIdentifier);
+                this.rdsClient.waitUntilDBInstanceAvailable(readerInstanceIdentifier);
+                log.info("DB reader instance is now available: {}", readerInstanceIdentifier);
                 return null;
               });
         }
@@ -246,50 +245,44 @@ public class RDSService {
             this.componentMetadata.getComponentName(), this.componentMetadata.getEnvName());
     String identifier = Application.getState().getIdentifier();
     String clusterIdentifier = Application.getState().getClusterIdentifier();
-    DeployConfig deployConfig = Application.getState().getDeployConfig();
     String instanceParameterGroupName =
-        deployConfig.getInstanceConfig() != null
-                && deployConfig.getInstanceConfig().getInstanceParameterGroupName() != null
-            ? deployConfig.getInstanceConfig().getInstanceParameterGroupName()
+        this.deployConfig.getInstanceConfig() != null
+                && this.deployConfig.getInstanceConfig().getInstanceParameterGroupName() != null
+            ? this.deployConfig.getInstanceConfig().getInstanceParameterGroupName()
             : Application.getState().getInstanceParameterGroupName();
     Map<String, String> tags =
         ApplicationUtil.merge(
             List.of(
-                deployConfig.getTags(), this.awsAccountData.getTags(), Constants.COMPONENT_TAGS));
+                this.deployConfig.getTags(),
+                this.awsAccountData.getTags(),
+                Constants.COMPONENT_TAGS));
 
     List<Callable<Void>> tasks = new ArrayList<>();
-    if (this.addReadersConfig.getReaders() != null
-        && !this.addReadersConfig.getReaders().isEmpty()) {
-      for (ReaderConfig readerConfig : this.addReadersConfig.getReaders()) {
-        String instanceType = readerConfig.getInstanceType();
-        Integer promotionTier = readerConfig.getPromotionTier();
-        Integer instanceCount = readerConfig.getInstanceCount();
+    for (ReaderConfig readerConfig : this.addReadersConfig.getReaders()) {
 
-        for (int j = 0; j < instanceCount; j++) {
-          String instanceId = ApplicationUtil.generateRandomId(4);
-          String readerInstanceIdentifier =
-              ApplicationUtil.joinByHyphen(name, instanceId, identifier);
-          log.info("Creating DB reader instance: {}", readerInstanceIdentifier);
-          this.rdsClient.createDBInstance(
-              readerInstanceIdentifier,
-              clusterIdentifier,
-              instanceParameterGroupName,
-              tags,
-              instanceType,
-              promotionTier,
-              deployConfig.getInstanceConfig());
+      for (int j = 0; j < readerConfig.getInstanceCount(); j++) {
+        String instanceId = ApplicationUtil.generateRandomId(4);
+        final String readerInstanceIdentifier =
+            ApplicationUtil.joinByHyphen(name, instanceId, identifier);
+        log.info("Creating DB reader instance: {}", readerInstanceIdentifier);
+        this.rdsClient.createDBInstance(
+            readerInstanceIdentifier,
+            clusterIdentifier,
+            instanceParameterGroupName,
+            tags,
+            readerConfig.getInstanceType(),
+            readerConfig.getPromotionTier(),
+            this.deployConfig.getInstanceConfig());
 
-          final String finalReaderInstanceIdentifier = readerInstanceIdentifier;
-          tasks.add(
-              () -> {
-                log.info(
-                    "Waiting for DB reader instance to become available: {}",
-                    finalReaderInstanceIdentifier);
-                this.rdsClient.waitUntilDBInstanceAvailable(finalReaderInstanceIdentifier);
-                log.info("DB reader instance is now available: {}", finalReaderInstanceIdentifier);
-                return null;
-              });
-        }
+        tasks.add(
+            () -> {
+              log.info(
+                  "Waiting for DB reader instance to become available: {}",
+                  readerInstanceIdentifier);
+              this.rdsClient.waitUntilDBInstanceAvailable(readerInstanceIdentifier);
+              log.info("DB reader instance is now available: {}", readerInstanceIdentifier);
+              return null;
+            });
       }
     }
     ApplicationUtil.runOnExecutorService(tasks);
@@ -297,54 +290,45 @@ public class RDSService {
   }
 
   public void removeReaders() {
-    DeployConfig deployConfig = Application.getState().getDeployConfig();
     List<Callable<Void>> tasks = new ArrayList<>();
 
-    if (this.removeReadersConfig.getReaders() != null
-        && !this.removeReadersConfig.getReaders().isEmpty()) {
-      Map<String, List<String>> readerInstances =
-          Application.getState().getReaderInstanceIdentifiers();
+    Map<String, List<String>> readerInstances =
+        Application.getState().getReaderInstanceIdentifiers();
 
-      if (readerInstances == null || readerInstances.isEmpty()) {
+    for (ReaderConfig removeConfig : this.removeReadersConfig.getReaders()) {
+      String instanceType = removeConfig.getInstanceType();
+      Integer removeCount = removeConfig.getInstanceCount();
+
+      List<String> existingInstances =
+          readerInstances.computeIfAbsent(
+              instanceType,
+              __ -> {
+                throw new GenericApplicationException(
+                    ApplicationError.CONSTRAINT_VIOLATION,
+                    String.format(
+                        "Instance type '%s' does not exist in current deployment", instanceType));
+              });
+
+      if (removeCount > existingInstances.size()) {
         throw new GenericApplicationException(
-            ApplicationError.CONSTRAINT_VIOLATION, "No DB reader instances exist to remove");
+            ApplicationError.CONSTRAINT_VIOLATION,
+            String.format(
+                "Cannot remove %d instances of type '%s'. Only %d instances exist",
+                removeCount, instanceType, existingInstances.size()));
       }
 
-      for (ReaderConfig removeConfig : this.removeReadersConfig.getReaders()) {
-        String instanceType = removeConfig.getInstanceType();
-        Integer removeCount = removeConfig.getInstanceCount();
+      for (int i = 0; i < removeCount; i++) {
+        final String instanceToRemove = existingInstances.get(existingInstances.size() - i - 1);
+        log.info("Removing DB reader instance: {}", instanceToRemove);
+        this.rdsClient.deleteDBInstance(instanceToRemove, this.deployConfig.getDeletionConfig());
 
-        List<String> existingInstances = readerInstances.get(instanceType);
-
-        if (existingInstances == null || existingInstances.isEmpty()) {
-          throw new GenericApplicationException(
-              ApplicationError.CONSTRAINT_VIOLATION,
-              String.format(
-                  "Instance type '%s' does not exist in current deployment", instanceType));
-        }
-
-        if (removeCount > existingInstances.size()) {
-          throw new GenericApplicationException(
-              ApplicationError.CONSTRAINT_VIOLATION,
-              String.format(
-                  "Cannot remove %d instances of type '%s'. Only %d instances exist",
-                  removeCount, instanceType, existingInstances.size()));
-        }
-
-        for (int i = 0; i < removeCount; i++) {
-          String instanceToRemove = existingInstances.get(existingInstances.size() - 1);
-          log.info("Removing DB reader instance: {}", instanceToRemove);
-          this.rdsClient.deleteDBInstance(instanceToRemove, deployConfig.getDeletionConfig());
-
-          final String finalInstanceToRemove = instanceToRemove;
-          tasks.add(
-              () -> {
-                log.info("Waiting for DB reader instance to be deleted: {}", finalInstanceToRemove);
-                this.rdsClient.waitUntilDBInstanceDeleted(finalInstanceToRemove);
-                log.info("DB reader instance has been deleted: {}", finalInstanceToRemove);
-                return null;
-              });
-        }
+        tasks.add(
+            () -> {
+              log.info("Waiting for DB reader instance to be deleted: {}", instanceToRemove);
+              this.rdsClient.waitUntilDBInstanceDeleted(instanceToRemove);
+              log.info("DB reader instance has been deleted: {}", instanceToRemove);
+              return null;
+            });
       }
     }
 
@@ -378,9 +362,7 @@ public class RDSService {
         log.info("Deleting DB reader instance: {}", readerInstanceIdentifier);
         this.rdsClient.deleteDBInstance(
             readerInstanceIdentifier,
-            Application.getState().getDeployConfig() != null
-                ? Application.getState().getDeployConfig().getDeletionConfig()
-                : null);
+            this.deployConfig != null ? this.deployConfig.getDeletionConfig() : null);
         tasks.add(
             () -> {
               log.info(
@@ -408,9 +390,7 @@ public class RDSService {
           "Deleting DB writer instance: {}", Application.getState().getWriterInstanceIdentifier());
       this.rdsClient.deleteDBInstance(
           Application.getState().getWriterInstanceIdentifier(),
-          Application.getState().getDeployConfig() != null
-              ? Application.getState().getDeployConfig().getDeletionConfig()
-              : null);
+          this.deployConfig != null ? this.deployConfig.getDeletionConfig() : null);
       tasks.add(
           () -> {
             log.info(
@@ -433,9 +413,7 @@ public class RDSService {
       log.info("Deleting DB cluster: {}", Application.getState().getClusterIdentifier());
       this.rdsClient.deleteDBCluster(
           Application.getState().getClusterIdentifier(),
-          Application.getState().getDeployConfig() != null
-              ? Application.getState().getDeployConfig().getDeletionConfig()
-              : null);
+          this.deployConfig != null ? this.deployConfig.getDeletionConfig() : null);
       log.info(
           "Waiting for DB cluster to become deleted: {}",
           Application.getState().getClusterIdentifier());

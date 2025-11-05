@@ -11,12 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor(onConstructor = @__({@Inject}))
 public class AddReaders implements Operation {
   @NonNull final RDSService rdsService;
-  @NonNull final StateService stateCorrectionService;
+  @NonNull final StateService stateService;
 
   @Override
   public void execute() {
-    this.stateCorrectionService.reconcileState();
+    this.stateService.reconcileState();
     this.rdsService.addReaders();
-    this.stateCorrectionService.reconcileState();
+    this.stateService.reconcileState();
   }
 }

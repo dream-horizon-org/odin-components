@@ -82,7 +82,7 @@ public class StateService {
 
       if (member.isClusterWriter().equals(Boolean.TRUE)) {
         state.setWriterInstanceIdentifier(instanceIdentifier);
-        if (state.getDeployConfig() != null) {
+        if (this.deployConfig != null) {
           this.deployConfig.setWriter(
               WriterConfig.builder()
                   .instanceType(instanceType)
@@ -108,8 +108,8 @@ public class StateService {
         log.debug("Found reader instance: {} of type: {}", instanceIdentifier, instanceType);
       }
     }
-    if (state.getDeployConfig() != null) {
-      state.getDeployConfig().setReaders(new ArrayList<>(readers.values()));
+    if (this.deployConfig != null) {
+      this.deployConfig.setReaders(new ArrayList<>(readers.values()));
     }
   }
 }
