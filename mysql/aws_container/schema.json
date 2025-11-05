@@ -1,0 +1,92 @@
+{
+  "type": "object",
+  "title": "Container provisioning configuration",
+  "properties": {
+    "username": {
+      "description": "username to connect to mysql",
+      "type": "string"
+    },
+    "password": {
+      "description": "password to connect to mysql",
+      "type": "string"
+    },    
+    "imageRegistry": {
+      "description": "The image registry from which the docker image needs to be pulled",
+      "type": "string"
+    },
+    "imageRepository": {
+      "description": "The image repository from which the docker image needs to be pulled",
+      "type": "string"
+    },
+    "readerCount": {
+      "description": "Number of MySQL reader replicas",
+      "type": "integer",
+      "minimum": 1
+    },
+    "storageClass": {
+      "description": "MySQL persistent volume storage class",
+      "type": "string"
+    },
+    "nodeSelector": {
+      "description": "Node labels for MySQL pods assignment",
+      "type": "string"
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "limits": {
+          "description": "The resources limits for MySQL containers",
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            },
+            "ephemeralStorage": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cpu",
+            "memory",
+            "ephemeralStorage"
+          ]
+        },
+        "requests": {
+          "description": "The resources requests for MySQL containers",
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string"
+            },
+            "memory": {
+              "type": "string"
+            },
+            "ephemeralStorage": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "cpu",
+            "memory",
+            "ephemeralStorage"
+          ]
+        }
+      },
+      "required": [
+        "limits",
+        "requests"
+      ]
+    }
+  },
+  "required": [
+    "imageRegistry",
+    "imageRepository",
+    "readerCount",
+    "storageClass",
+    "nodeSelector",
+    "resources"
+  ]
+}

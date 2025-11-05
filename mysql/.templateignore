@@ -1,2 +1,3 @@
 ./README.md.tpl
 ./aws_rds/README.md.tpl
+./aws_container/README.md.tpl

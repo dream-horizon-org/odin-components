@@ -1,0 +1,106 @@
+image:
+  registry: {{ flavourConfig.imageRegistry }}
+  repository: {{ flavourConfig.imageRepository }}
+  tag: {{ baseConfig.version }}
+  pullSecrets:
+    - {{ componentMetadata.pullSecret }}
+
+auth:
+  username: {{ flavourConfig.username }}
+  password: {{ flavourConfig.password }}
+
+global:
+  storageClass: {{ flavourConfig.storageClass }}
+
+{% if flavourConfig.readerCount == 0 %}
+architecture: standalone
+{% else %}
+architecture: replication
+{% endif %}
+
+primary:
+  resources:
+    requests:
+      memory: {{ flavourConfig.resources.requests.memory }}
+      cpu: {{ flavourConfig.resources.requests.cpu }}
+      ephemeral-storage: {{ flavourConfig.resources.requests.ephemeralStorage }}
+    limits:
+      memory: {{ flavourConfig.resources.limits.memory }}
+      cpu: {{ flavourConfig.resources.limits.cpu }}
+      ephemeral-storage: {{ flavourConfig.resources.limits.ephemeralStorage }}
+
+  {% if componentMetadata.annotations.writer %}
+  service:
+    annotations:
+      {% for key,value in componentMetadata.annotations.writer.items() %}
+      {{ key }}: "{{ value }}"
+      {% endfor %}
+  {% endif %}
+
+  # nodeSelector:
+  #   node_name: {{ flavourConfig.nodeSelector }}
+  configuration: |-
+    [mysqld]
+    server-id=1
+    default_authentication_plugin=mysql_native_password
+    skip-name-resolve
+    explicit_defaults_for_timestamp
+    basedir=/opt/bitnami/mysql
+    plugin_dir=/opt/bitnami/mysql/lib/plugin
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    datadir=/bitnami/mysql/data
+    tmpdir=/opt/bitnami/mysql/tmp
+    max_allowed_packet=16M
+    bind-address=0.0.0.0
+    pid-file=/opt/bitnami/mysql/tmp/mysqld.pid
+    log-error=/opt/bitnami/mysql/logs/mysqld.log
+    character-set-server=UTF8
+    collation-server=utf8_general_ci
+    {% if flavourConfig.binlog.enabled %}
+    {% for key,value in flavourConfig.binlog.configuration.items() %}
+    {{ key }}={{ value }}
+    {% endfor %}
+    {% endif %}
+    [client]
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    default-character-set=UTF8
+    plugin_dir=/opt/bitnami/mysql/lib/plugin
+    [manager]
+    port=3306
+    socket=/opt/bitnami/mysql/tmp/mysql.sock
+    pid-file=/opt/bitnami/mysql/tmp/mysqld.pid
+
+secondary:
+  resources:
+    requests:
+      memory: {{ flavourConfig.resources.requests.memory }}
+      cpu: {{ flavourConfig.resources.requests.cpu }}
+      ephemeral-storage: {{ flavourConfig.resources.requests.ephemeralStorage }}
+    limits:
+      memory: {{ flavourConfig.resources.limits.memory }}
+      cpu: {{ flavourConfig.esources.limits.cpu }}
+      ephemeral-storage: {{ flavourConfig.resources.limits.ephemeralStorage }}
+
+  {% if componentMetadata.annotations.reader %}
+  service:
+    annotations:
+      {% for key,value in componentMetadata.annotations.reader.items() %}
+      {{ key }}: "{{ value }}"
+      {% endfor %}
+  {% endif %}
+
+  replicaCount: {{ flavourConfig.readerCount }}
+  # nodeSelector:
+  #   node_name: {{ flavourConfig.nodeSelector }}
+
+initdbScripts:
+  init.sh: |
+    #!/bin/bash
+    if [[ "${MYSQL_REPLICATION_MODE}" == "master" ]]; then
+    mysql -u root -p${MYSQL_ROOT_PASSWORD} << EOF
+    GRANT ALL PRIVILEGES ON * . * TO '$MYSQL_USER'@'%';
+    FLUSH PRIVILEGES;
+    EOF
+    fi

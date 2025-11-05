@@ -46,4 +46,31 @@ Odin.component {
         }
     }
 
+    flavour {
+        name "aws_container"
+        deploy {
+            run "PREVIOUS_SHA='${getLastState()}' bash deploy.sh"
+            out "sha256sum values.yaml"
+
+            discovery {
+                run "bash discovery.sh"
+            }
+        }
+
+        healthcheck {
+            linearRetryPolicy {
+                count 2
+                intervalSeconds 3
+            }
+
+            tcp {
+                port "3306"
+            }
+        }
+
+        undeploy {
+            run "bash undeploy.sh"
+        }
+    }   
+
 }

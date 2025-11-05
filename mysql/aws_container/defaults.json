@@ -1,0 +1,21 @@
+{
+  "imageRegistry": "dreamsports.jfrog.io",
+  "imageRepository": "d11-docker-artifacts/mysql",
+  "storageClass": "gp2",
+  "nodeSelector": "ON_DEMAND",
+  "username": "root",
+  "password": "root123",
+  "readerCount": 1,
+  "resources": {
+    "limits": {
+      "cpu": "200m",
+      "ephemeralStorage": "2Gi",
+      "memory": "512Mi"
+    },
+    "requests": {
+      "cpu": "100m",
+      "ephemeralStorage": "1Gi",
+      "memory": "256Mi"
+    }
+  }
+}
