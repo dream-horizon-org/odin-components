@@ -188,7 +188,9 @@ public class Application {
     }
     modules.addAll(this.getGuiceModules());
     this.initializeGuiceModules(modules).getInstance(operationClass).execute();
-    Application.getState().setDeployConfig(this.deployConfig);
+    if (Operations.fromValue(this.operationName).equals(Operations.DEPLOY)) {
+      Application.getState().setDeployConfig(this.deployConfig);
+    }
     log.info("Executed operation:[{}]", Operations.fromValue(this.operationName));
   }
 

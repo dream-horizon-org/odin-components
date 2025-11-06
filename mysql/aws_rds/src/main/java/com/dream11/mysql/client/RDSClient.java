@@ -260,9 +260,6 @@ public class RDSClient {
           requestBuilder::autoMinorVersionUpgrade, instanceConfig.getAutoMinorVersionUpgrade());
 
       ApplicationUtil.setIfNotNull(
-          requestBuilder::deletionProtection, instanceConfig.getDeletionProtection());
-
-      ApplicationUtil.setIfNotNull(
           requestBuilder::enablePerformanceInsights, instanceConfig.getEnablePerformanceInsights());
 
       ApplicationUtil.setIfNotNull(

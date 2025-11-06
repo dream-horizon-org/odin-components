@@ -198,14 +198,14 @@ public class RDSService {
     if (this.deployConfig.getReaders() != null && !this.deployConfig.getReaders().isEmpty()) {
       for (int i = 0; i < this.deployConfig.getReaders().size(); i++) {
         String instanceType = this.deployConfig.getReaders().get(i).getInstanceType();
-        Integer promotionTier = this.deployConfig.getReaders().get(i).getPromotionTier();
-        Integer instanceCount = this.deployConfig.getReaders().get(i).getInstanceCount();
 
         List<String> existingInstances =
             Application.getState().getReaderInstanceIdentifiers().get(instanceType);
         int stateInstanceCount = existingInstances != null ? existingInstances.size() : 0;
 
-        for (int j = stateInstanceCount; j < instanceCount; j++) {
+        for (int j = stateInstanceCount;
+            j < this.deployConfig.getReaders().get(i).getInstanceCount();
+            j++) {
           String instanceId = ApplicationUtil.generateRandomId(4);
           final String readerInstanceIdentifier =
               ApplicationUtil.joinByHyphen(name, instanceId, identifier);
@@ -216,7 +216,7 @@ public class RDSService {
               instanceParameterGroupName,
               tags,
               instanceType,
-              promotionTier,
+              this.deployConfig.getReaders().get(i).getPromotionTier(),
               this.deployConfig.getInstanceConfig());
           Application.getState()
               .getReaderInstanceIdentifiers()
