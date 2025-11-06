@@ -1,10 +1,10 @@
 {
-  "imageRegistry": "dreamsports.jfrog.io",
-  "imageRepository": "d11-docker-artifacts/mysql",
-  "storageClass": "gp2",
+  "imageRegistry": "666019485799.dkr.ecr.us-east-1.amazonaws.com",
+  "imageRepository": "docker-artifacts/mysql",
+  "storageClass": "ebs-gp3",
   "nodeSelector": "ON_DEMAND",
-  "username": "root",
-  "password": "root123",
+  "username": "test",
+  "password": "test123",
   "readerCount": 1,
   "resources": {
     "limits": {

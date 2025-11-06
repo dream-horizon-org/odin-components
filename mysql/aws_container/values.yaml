@@ -2,8 +2,6 @@ image:
   registry: {{ flavourConfig.imageRegistry }}
   repository: {{ flavourConfig.imageRepository }}
   tag: {{ baseConfig.version }}
-  pullSecrets:
-    - {{ componentMetadata.pullSecret }}
 
 auth:
   username: {{ flavourConfig.username }}
@@ -19,6 +17,8 @@ architecture: replication
 {% endif %}
 
 primary:
+  persistence:
+    storageClass: "ebs-gp3"
   resources:
     requests:
       memory: {{ flavourConfig.resources.requests.memory }}
@@ -37,8 +37,8 @@ primary:
       {% endfor %}
   {% endif %}
 
-  # nodeSelector:
-  #   node_name: {{ flavourConfig.nodeSelector }}
+  nodeSelector:
+    node_name: {{ flavourConfig.nodeSelector }}
   configuration: |-
     [mysqld]
     server-id=1
@@ -73,6 +73,8 @@ primary:
     pid-file=/opt/bitnami/mysql/tmp/mysqld.pid
 
 secondary:
+  persistence:
+    storageClass: "ebs-gp3"  
   resources:
     requests:
       memory: {{ flavourConfig.resources.requests.memory }}
@@ -80,7 +82,7 @@ secondary:
       ephemeral-storage: {{ flavourConfig.resources.requests.ephemeralStorage }}
     limits:
       memory: {{ flavourConfig.resources.limits.memory }}
-      cpu: {{ flavourConfig.esources.limits.cpu }}
+      cpu: {{ flavourConfig.resources.limits.cpu }}
       ephemeral-storage: {{ flavourConfig.resources.limits.ephemeralStorage }}
 
   {% if componentMetadata.annotations.reader %}
@@ -92,8 +94,8 @@ secondary:
   {% endif %}
 
   replicaCount: {{ flavourConfig.readerCount }}
-  # nodeSelector:
-  #   node_name: {{ flavourConfig.nodeSelector }}
+  nodeSelector:
+    node_name: {{ flavourConfig.nodeSelector }}
 
 initdbScripts:
   init.sh: |
