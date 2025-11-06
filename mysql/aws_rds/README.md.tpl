@@ -4,7 +4,7 @@ Deploy and perform operations on your application in AWS RDS
 
 ## Operations
 - [add-readers](operations/add-readers)
-- [remove-readers](operation/remove-readers)
+- [remove-readers](operations/remove-readers)
 
 {{ .Markdown 3 }}
 

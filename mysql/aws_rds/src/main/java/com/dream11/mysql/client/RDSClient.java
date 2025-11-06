@@ -19,8 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
-import software.amazon.awssdk.core.retry.RetryMode;
+import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.retries.api.BackoffStrategy;
 import software.amazon.awssdk.services.rds.RdsClient;
 import software.amazon.awssdk.services.rds.model.CreateDbClusterParameterGroupRequest;
 import software.amazon.awssdk.services.rds.model.CreateDbClusterRequest;
@@ -51,7 +52,14 @@ public class RDSClient {
             .overrideConfiguration(
                 overrideConfig ->
                     overrideConfig
-                        .retryStrategy(RetryMode.STANDARD)
+                        .retryStrategy(
+                            AwsRetryStrategy.standardRetryStrategy().toBuilder()
+                                .maxAttempts(Constants.MAX_ATTEMPTS)
+                                .throttlingBackoffStrategy(
+                                    BackoffStrategy.exponentialDelayHalfJitter(
+                                        Duration.ofSeconds(Constants.RETRY_DELAY),
+                                        Duration.ofSeconds(Constants.RETRY_MAX_BACKOFF)))
+                                .build())
                         .apiCallTimeout(Duration.ofMinutes(2))
                         .apiCallAttemptTimeout(Duration.ofSeconds(30)))
             .build();
@@ -59,7 +67,6 @@ public class RDSClient {
 
   public List<String> restoreDBClusterFromSnapshot(
       String clusterIdentifier,
-      String snapshotIdentifier,
       Map<String, String> tags,
       DeployConfig deployConfig,
       String clusterParameterGroupName,
@@ -90,10 +97,8 @@ public class RDSClient {
         tags,
         deployConfig,
         rdsData);
-
-    RestoreDbClusterFromSnapshotRequest request = restoreBuilder.build();
-
-    DBCluster cluster = this.dbClient.restoreDBClusterFromSnapshot(request).dbCluster();
+    DBCluster cluster =
+        this.dbClient.restoreDBClusterFromSnapshot(restoreBuilder.build()).dbCluster();
     return List.of(cluster.endpoint(), cluster.readerEndpoint());
   }
 
@@ -257,9 +262,6 @@ public class RDSClient {
           requestBuilder::autoMinorVersionUpgrade, instanceConfig.getAutoMinorVersionUpgrade());
 
       ApplicationUtil.setIfNotNull(
-          requestBuilder::deletionProtection, instanceConfig.getDeletionProtection());
-
-      ApplicationUtil.setIfNotNull(
           requestBuilder::enablePerformanceInsights, instanceConfig.getEnablePerformanceInsights());
 
       ApplicationUtil.setIfNotNull(
@@ -273,7 +275,8 @@ public class RDSClient {
           requestBuilder::performanceInsightsRetentionPeriod,
           instanceConfig.getPerformanceInsightsRetentionPeriod());
 
-      if (instanceConfig.getEnhancedMonitoring().getEnabled()) {
+      if (instanceConfig.getEnhancedMonitoring() != null
+          && instanceConfig.getEnhancedMonitoring().getEnabled()) {
         requestBuilder
             .monitoringInterval(instanceConfig.getEnhancedMonitoring().getInterval())
             .monitoringRoleArn(instanceConfig.getEnhancedMonitoring().getMonitoringRoleArn());
@@ -289,7 +292,7 @@ public class RDSClient {
     try (RdsWaiter waiter =
         RdsWaiter.builder()
             .client(this.dbClient)
-            .overrideConfiguration(config -> config.maxAttempts(Constants.DB_WAIT_RETRY_COUNT))
+            .overrideConfiguration(config -> config.waitTimeout(Constants.DB_WAIT_RETRY_TIMEOUT))
             .build()) {
       waitAction.accept(waiter);
     } catch (Exception e) {
