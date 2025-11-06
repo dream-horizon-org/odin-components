@@ -412,8 +412,7 @@ public class RDSService {
       for (String readerInstanceIdentifier : readerInstanceIdentifiers) {
         log.info("Deleting DB reader instance: {}", readerInstanceIdentifier);
         this.rdsClient.deleteDBInstance(
-            readerInstanceIdentifier,
-            this.deployConfig != null ? this.deployConfig.getDeletionConfig() : null);
+            readerInstanceIdentifier, this.deployConfig.getDeletionConfig());
         tasks.add(
             () -> {
               log.info(
