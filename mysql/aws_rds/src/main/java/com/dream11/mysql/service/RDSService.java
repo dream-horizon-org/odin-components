@@ -67,10 +67,10 @@ public class RDSService {
         this.createClusterAndWait(name, identifier, tags, clusterParameterGroupName);
 
     tasks.addAll(
-        this.createWriterInstanceAndWaitTaks(
+        this.createWriterInstanceAndWaitTasks(
             name, identifier, clusterIdentifier, tags, instanceParameterGroupName));
     tasks.addAll(
-        this.createReaderInstancesAndWaitTaks(
+        this.createReaderInstancesAndWaitTasks(
             name, identifier, clusterIdentifier, tags, instanceParameterGroupName));
 
     ApplicationUtil.runOnExecutorService(tasks);
@@ -160,7 +160,7 @@ public class RDSService {
     return clusterIdentifier;
   }
 
-  private List<Callable<Void>> createWriterInstanceAndWaitTaks(
+  private List<Callable<Void>> createWriterInstanceAndWaitTasks(
       String name,
       String identifier,
       String clusterIdentifier,
@@ -193,7 +193,7 @@ public class RDSService {
     return tasks;
   }
 
-  private List<Callable<Void>> createReaderInstancesAndWaitTaks(
+  private List<Callable<Void>> createReaderInstancesAndWaitTasks(
       String name,
       String identifier,
       String clusterIdentifier,
