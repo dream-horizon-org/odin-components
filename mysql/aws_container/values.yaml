@@ -17,8 +17,6 @@ architecture: replication
 {% endif %}
 
 primary:
-  persistence:
-    storageClass: "ebs-gp3"
   resources:
     requests:
       memory: {{ flavourConfig.resources.requests.memory }}
@@ -72,9 +70,7 @@ primary:
     socket=/opt/bitnami/mysql/tmp/mysql.sock
     pid-file=/opt/bitnami/mysql/tmp/mysqld.pid
 
-secondary:
-  persistence:
-    storageClass: "ebs-gp3"  
+secondary: 
   resources:
     requests:
       memory: {{ flavourConfig.resources.requests.memory }}
