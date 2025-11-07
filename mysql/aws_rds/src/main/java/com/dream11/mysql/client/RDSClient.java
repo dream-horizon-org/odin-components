@@ -491,7 +491,7 @@ public class RDSClient {
                       Parameter.builder()
                           .parameterName(entry.getKey())
                           .parameterValue(entry.getValue().toString())
-                          .applyMethod("pending-reboot")
+                          .applyMethod(Constants.PARAMETER_GROUP_CONFIG_APPLY_METHOD)
                           .build())
               .toList();
 
@@ -530,7 +530,7 @@ public class RDSClient {
                       Parameter.builder()
                           .parameterName(entry.getKey())
                           .parameterValue(entry.getValue().toString())
-                          .applyMethod("pending-reboot")
+                          .applyMethod(Constants.PARAMETER_GROUP_CONFIG_APPLY_METHOD)
                           .build())
               .toList();
 

@@ -450,31 +450,29 @@ public class RDSService {
         }
       }
 
-      Map<String, List<String>> readerInstanceIdentifiers =
-          Application.getState().getReaderInstanceIdentifiers();
-      if (readerInstanceIdentifiers != null) {
-        for (Map.Entry<String, List<String>> entry : readerInstanceIdentifiers.entrySet()) {
-          for (String readerInstanceIdentifier : entry.getValue()) {
-            log.info("Updating reader instance: {}", readerInstanceIdentifier);
-            this.rdsClient.updateDBInstance(
-                readerInstanceIdentifier,
-                this.updateClusterConfig.getInstanceConfig(),
-                updatedInstanceParameterGroupName,
-                this.updateClusterConfig.getApplyImmediately());
-            if (this.updateClusterConfig.getApplyImmediately()) {
-              tasks.add(
-                  () -> {
-                    log.info(
-                        "Waiting for reader instance to become available: {}",
-                        readerInstanceIdentifier);
-                    this.rdsClient.waitUntilDBInstanceAvailable(readerInstanceIdentifier);
-                    log.info("Reader instance update completed: {}", readerInstanceIdentifier);
-                    return null;
-                  });
-            }
+      for (Map.Entry<String, List<String>> entry :
+          Application.getState().getReaderInstanceIdentifiers().entrySet()) {
+        for (String readerInstanceIdentifier : entry.getValue()) {
+          log.info("Updating reader instance: {}", readerInstanceIdentifier);
+          this.rdsClient.updateDBInstance(
+              readerInstanceIdentifier,
+              this.updateClusterConfig.getInstanceConfig(),
+              updatedInstanceParameterGroupName,
+              this.updateClusterConfig.getApplyImmediately());
+          if (this.updateClusterConfig.getApplyImmediately()) {
+            tasks.add(
+                () -> {
+                  log.info(
+                      "Waiting for reader instance to become available: {}",
+                      readerInstanceIdentifier);
+                  this.rdsClient.waitUntilDBInstanceAvailable(readerInstanceIdentifier);
+                  log.info("Reader instance update completed: {}", readerInstanceIdentifier);
+                  return null;
+                });
           }
         }
       }
+
       ApplicationUtil.runOnExecutorService(tasks);
     }
 
@@ -493,8 +491,6 @@ public class RDSService {
             "Switching cluster parameter group from {} to {}",
             Application.getState().getDeployConfig().getClusterParameterGroupName(),
             this.updateClusterConfig.getClusterParameterGroupName());
-        Application.getState()
-            .setClusterParameterGroupName(this.updateClusterConfig.getClusterParameterGroupName());
         return this.updateClusterConfig.getClusterParameterGroupName();
       } else {
         throw new GenericApplicationException(
@@ -517,8 +513,6 @@ public class RDSService {
             "Switching cluster parameter group from {} to {}",
             Application.getState().getClusterParameterGroupName(),
             this.updateClusterConfig.getClusterParameterGroupName());
-        Application.getState()
-            .setClusterParameterGroupName(this.updateClusterConfig.getClusterParameterGroupName());
         return this.updateClusterConfig.getClusterParameterGroupName();
       }
     }
@@ -549,7 +543,6 @@ public class RDSService {
             "Switching instance parameter group from {} to {}",
             oldParameterGroupName,
             newParameterGroupName);
-        Application.getState().setInstanceParameterGroupName(newParameterGroupName);
         return newParameterGroupName;
       } else {
         throw new GenericApplicationException(
@@ -570,7 +563,6 @@ public class RDSService {
             "Switching instance parameter group from {} to {}",
             Application.getState().getInstanceParameterGroupName(),
             newParameterGroupName);
-        Application.getState().setInstanceParameterGroupName(newParameterGroupName);
         return newParameterGroupName;
       }
     }
@@ -592,12 +584,10 @@ public class RDSService {
 
     Map<String, List<String>> readerInstanceIdentifiers =
         Application.getState().getReaderInstanceIdentifiers();
-    if (readerInstanceIdentifiers != null) {
-      for (Map.Entry<String, List<String>> entry : readerInstanceIdentifiers.entrySet()) {
-        for (String readerInstanceIdentifier : entry.getValue()) {
-          String readerArn = this.rdsClient.getDBInstance(readerInstanceIdentifier).dbInstanceArn();
-          this.rdsClient.updateTagsForResource(readerArn, tags);
-        }
+    for (Map.Entry<String, List<String>> entry : readerInstanceIdentifiers.entrySet()) {
+      for (String readerInstanceIdentifier : entry.getValue()) {
+        String readerArn = this.rdsClient.getDBInstance(readerInstanceIdentifier).dbInstanceArn();
+        this.rdsClient.updateTagsForResource(readerArn, tags);
       }
     }
 

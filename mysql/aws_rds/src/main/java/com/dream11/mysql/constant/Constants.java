@@ -24,4 +24,5 @@ public class Constants {
   public final String CLUSTER_PARAMETER_GROUP_SUFFIX = "cpg";
   public final String INSTANCE_PARAMETER_GROUP_SUFFIX = "ipg";
   public final Integer RANDOM_ID_LENGTH = 4;
+  public final String PARAMETER_GROUP_CONFIG_APPLY_METHOD = "pending-reboot";
 }
