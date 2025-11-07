@@ -14,6 +14,8 @@ Deploy your MySQL in container
 | `readerCount`     | integer              | **Yes**  | Number of MySQL reader replicas                                     |
 | `resources`       | [object](#resources) | **Yes**  |                                                                     |
 | `storageClass`    | string               | **Yes**  | MySQL persistent volume storage class                               |
+| `password`        | string               | No       | password to connect to mysql                                        |
+| `username`        | string               | No       | username to connect to mysql                                        |
 
 #### resources
 
