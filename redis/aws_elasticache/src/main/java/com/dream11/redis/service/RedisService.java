@@ -83,7 +83,10 @@ public class RedisService {
   }
 
   public void undeploy() {
+    log.info("Undeploying Redis...");
     redisClient.deleteReplicationGroup(Application.getState().getReplicationGroupIdentifier());
-    log.info("Redis undeployment completed successfully");
+    log.info(
+        "Redis undeployment completed successfully for replicationGroup {}",
+        Application.getState().getReplicationGroupIdentifier());
   }
 }
