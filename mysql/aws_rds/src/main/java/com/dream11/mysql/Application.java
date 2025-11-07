@@ -6,6 +6,8 @@ import com.dream11.mysql.config.metadata.aws.AwsAccountData;
 import com.dream11.mysql.config.metadata.aws.RDSData;
 import com.dream11.mysql.config.user.AddReadersConfig;
 import com.dream11.mysql.config.user.DeployConfig;
+import com.dream11.mysql.config.user.FailoverConfig;
+import com.dream11.mysql.config.user.RebootConfig;
 import com.dream11.mysql.config.user.RemoveReadersConfig;
 import com.dream11.mysql.constant.Constants;
 import com.dream11.mysql.constant.Operations;
@@ -17,7 +19,9 @@ import com.dream11.mysql.inject.ConfigModule;
 import com.dream11.mysql.inject.OptionalConfigModule;
 import com.dream11.mysql.operation.AddReaders;
 import com.dream11.mysql.operation.Deploy;
+import com.dream11.mysql.operation.Failover;
 import com.dream11.mysql.operation.Operation;
+import com.dream11.mysql.operation.Reboot;
 import com.dream11.mysql.operation.RemoveReaders;
 import com.dream11.mysql.operation.Undeploy;
 import com.dream11.mysql.state.State;
@@ -177,6 +181,26 @@ public class Application {
                     .config(removeReaderConfig)
                     .build());
             yield RemoveReaders.class;
+          }
+          case FAILOVER -> {
+            FailoverConfig failoverConfig =
+                Application.getObjectMapper().readValue(this.config, FailoverConfig.class);
+            modules.add(
+                OptionalConfigModule.<FailoverConfig>builder()
+                    .clazz(FailoverConfig.class)
+                    .config(failoverConfig)
+                    .build());
+            yield Failover.class;
+          }
+          case REBOOT -> {
+            RebootConfig rebootConfig =
+                Application.getObjectMapper().readValue(this.config, RebootConfig.class);
+            modules.add(
+                OptionalConfigModule.<RebootConfig>builder()
+                    .clazz(RebootConfig.class)
+                    .config(rebootConfig)
+                    .build());
+            yield Reboot.class;
           }
           case UNDEPLOY -> Undeploy.class;
         };
