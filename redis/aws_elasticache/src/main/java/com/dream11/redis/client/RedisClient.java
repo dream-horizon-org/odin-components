@@ -1,15 +1,17 @@
 package com.dream11.redis.client;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.dream11.redis.config.metadata.aws.RedisData;
 import com.dream11.redis.config.user.DeployConfig;
 import com.dream11.redis.constant.Constants;
 import com.dream11.redis.exception.GenericApplicationException;
 import com.dream11.redis.exception.ReplicationGroupNotFoundException;
 import com.dream11.redis.util.ApplicationUtil;
-import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.core.retry.RetryMode;
@@ -220,4 +222,28 @@ public class RedisClient {
       }
     }
   }
+
+  @SneakyThrows
+  public String getCacheNodeType(String replicationGroupId) {
+    DescribeReplicationGroupsRequest request = DescribeReplicationGroupsRequest.builder()
+        .replicationGroupId(replicationGroupId)
+        .build();
+
+    return elastiCacheClient.describeReplicationGroups(request)
+        .replicationGroups()
+        .stream()
+        .findFirst()
+        .map(ReplicationGroup::cacheNodeType)
+        .orElseThrow(() -> new ReplicationGroupNotFoundException(replicationGroupId));
+
+  }
+
+  @SneakyThrows
+  public void updateCacheNodeType(String replicationGroupId, String newCacheNodeType) {
+    elastiCacheClient.modifyReplicationGroup(builder -> builder
+        .replicationGroupId(replicationGroupId)
+        .cacheNodeType(newCacheNodeType)
+        .applyImmediately(true)  // Set to true for immediate update, false to apply during maintenance window
+        .build());
+}
 }

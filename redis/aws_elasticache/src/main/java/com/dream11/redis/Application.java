@@ -1,32 +1,5 @@
 package com.dream11.redis;
 
-import com.dream11.redis.client.RedisClient;
-import com.dream11.redis.config.metadata.ComponentMetadata;
-import com.dream11.redis.config.metadata.aws.AwsAccountData;
-import com.dream11.redis.config.metadata.aws.RedisData;
-import com.dream11.redis.config.user.DeployConfig;
-import com.dream11.redis.constant.Constants;
-import com.dream11.redis.constant.Operations;
-import com.dream11.redis.error.ApplicationError;
-import com.dream11.redis.error.ErrorCategory;
-import com.dream11.redis.exception.GenericApplicationException;
-import com.dream11.redis.inject.AwsModule;
-import com.dream11.redis.inject.ConfigModule;
-import com.dream11.redis.operation.Deploy;
-import com.dream11.redis.operation.Operation;
-import com.dream11.redis.operation.Undeploy;
-import com.dream11.redis.state.State;
-import com.dream11.redis.util.ApplicationUtil;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -39,12 +12,45 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.io.FileUtils;
+
+import com.dream11.redis.client.RedisClient;
+import com.dream11.redis.config.metadata.ComponentMetadata;
+import com.dream11.redis.config.metadata.aws.AwsAccountData;
+import com.dream11.redis.config.metadata.aws.RedisData;
+import com.dream11.redis.config.user.DeployConfig;
+import com.dream11.redis.config.user.UpdateNodeTypeConfig;
+import com.dream11.redis.constant.Constants;
+import com.dream11.redis.constant.Operations;
+import com.dream11.redis.error.ApplicationError;
+import com.dream11.redis.error.ErrorCategory;
+import com.dream11.redis.exception.GenericApplicationException;
+import com.dream11.redis.inject.AwsModule;
+import com.dream11.redis.inject.ConfigModule;
+import com.dream11.redis.inject.OptionalConfigModule;
+import com.dream11.redis.operation.Deploy;
+import com.dream11.redis.operation.Operation;
+import com.dream11.redis.operation.Undeploy;
+import com.dream11.redis.operation.UpdateNodeType;
+import com.dream11.redis.state.State;
+import com.dream11.redis.util.ApplicationUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Module;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 
 @Slf4j
@@ -153,6 +159,17 @@ public class Application {
             yield Deploy.class;
           }
           case UNDEPLOY -> Undeploy.class;
+          case UPDATE_NODE_TYPE -> {
+            this.deployConfig = Application.getState().getDeployConfig();
+            this.deployConfig = this.deployConfig.mergeWith(this.config);
+            UpdateNodeTypeConfig updateNodeTypeConfig = Application.getObjectMapper().readValue(this.config, UpdateNodeTypeConfig.class);
+            modules.add(
+                    OptionalConfigModule.<UpdateNodeTypeConfig>builder()
+                            .clazz(UpdateNodeTypeConfig.class)
+                            .config(updateNodeTypeConfig)
+                            .build());
+            yield UpdateNodeType.class;
+          }
         };
 
     if (Operations.fromValue(this.operationName).equals(Operations.UNDEPLOY)) {

@@ -6,7 +6,9 @@ import com.dream11.redis.config.metadata.ComponentMetadata;
 import com.dream11.redis.config.metadata.aws.AwsAccountData;
 import com.dream11.redis.config.metadata.aws.RedisData;
 import com.dream11.redis.config.user.DeployConfig;
+import com.dream11.redis.config.user.UpdateNodeTypeConfig;
 import com.dream11.redis.constant.Constants;
+import com.dream11.redis.exception.GenericApplicationException;
 import com.dream11.redis.util.ApplicationUtil;
 import com.google.inject.Inject;
 import java.util.List;
@@ -86,4 +88,38 @@ public class RedisService {
     redisClient.deleteReplicationGroup(Application.getState().getReplicationGroupIdentifier());
     log.info("Redis undeployment completed successfully");
   }
+
+  public void updateNodeType(@NonNull UpdateNodeTypeConfig updateNodeTypeConfig) {
+    String replicationGroupId = Application.getState().getReplicationGroupIdentifier();
+    log.info(
+        "Updating node type of replication group: {} to {}",
+        replicationGroupId,
+        updateNodeTypeConfig);
+    String currentCacheNodeType = this.redisClient.getCacheNodeType(replicationGroupId);
+    String desiredCacheNodeType = updateNodeTypeConfig.getCacheNodeType();
+    if(currentCacheNodeType.equals(desiredCacheNodeType)) {
+      log.info("Cache node type is already {}, no update needed", currentCacheNodeType);
+      return;
+    }
+    this.redisClient.updateCacheNodeType(replicationGroupId, desiredCacheNodeType);
+
+    log.info("Waiting for Replication group modification to complete: {}", replicationGroupId);
+    // Wait for the replication group to become available after modification
+    // This is necessary because modifyReplicationGroup is asynchronous
+    // Even with applyImmediately(true), the modification can take 15-60+ minutes
+    this.redisClient.waitUntilReplicationGroupAvailable(
+        replicationGroupId,
+        Constants.REPLICATION_GROUP_WAIT_RETRY_TIMEOUT,
+        Constants.REPLICATION_GROUP_WAIT_RETRY_INTERVAL);
+    log.info("Replication group modification completed, verifying node type: {}", replicationGroupId);
+    String updatedNodeType = this.redisClient.getCacheNodeType(replicationGroupId);
+    if (!updatedNodeType.equals(desiredCacheNodeType)) {
+        throw new GenericApplicationException(
+            String.format("Node type update failed. Expected: %s, Got: %s",
+                desiredCacheNodeType, updatedNodeType));
+    }
+    log.info("Node type update completed successfully for replication group: {}", replicationGroupId);
+  }
+
+
 }
