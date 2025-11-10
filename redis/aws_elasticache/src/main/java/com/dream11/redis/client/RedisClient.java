@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import com.dream11.redis.config.metadata.aws.RedisData;
 import com.dream11.redis.config.user.DeployConfig;
+import com.dream11.redis.config.user.UpdateReplicaCountConfig;
 import com.dream11.redis.constant.Constants;
 import com.dream11.redis.error.ApplicationError;
 import com.dream11.redis.exception.GenericApplicationException;
@@ -20,9 +21,12 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.retries.api.BackoffStrategy;
 import software.amazon.awssdk.services.elasticache.ElastiCacheClient;
 import software.amazon.awssdk.services.elasticache.model.CreateReplicationGroupRequest;
+import software.amazon.awssdk.services.elasticache.model.DecreaseReplicaCountRequest;
 import software.amazon.awssdk.services.elasticache.model.DeleteReplicationGroupRequest;
 import software.amazon.awssdk.services.elasticache.model.DescribeReplicationGroupsRequest;
 import software.amazon.awssdk.services.elasticache.model.DescribeReplicationGroupsResponse;
+import software.amazon.awssdk.services.elasticache.model.IncreaseReplicaCountRequest;
+import software.amazon.awssdk.services.elasticache.model.NodeGroup;
 import software.amazon.awssdk.services.elasticache.model.ReplicationGroup;
 import software.amazon.awssdk.services.elasticache.model.Tag;
 
@@ -36,15 +40,15 @@ public class RedisClient {
         .overrideConfiguration(
             overrideConfig -> overrideConfig
                 .retryStrategy(
-                            AwsRetryStrategy.standardRetryStrategy().toBuilder()
-                                .maxAttempts(Constants.AWS_CLIENT_MAX_ATTEMPTS_SECONDS)
-                                .throttlingBackoffStrategy(
-                                    BackoffStrategy.exponentialDelayHalfJitter(
-                                        Duration.ofSeconds(
-                                            Constants.AWS_CLIENT_RETRY_DELAY_SECONDS),
-                                        Duration.ofSeconds(
-                                            Constants.AWS_CLIENT_RETRY_MAX_BACKOFF_SECONDS)))
-                                .build())
+                    AwsRetryStrategy.standardRetryStrategy().toBuilder()
+                        .maxAttempts(Constants.AWS_CLIENT_MAX_ATTEMPTS_SECONDS)
+                        .throttlingBackoffStrategy(
+                            BackoffStrategy.exponentialDelayHalfJitter(
+                                Duration.ofSeconds(
+                                    Constants.AWS_CLIENT_RETRY_DELAY_SECONDS),
+                                Duration.ofSeconds(
+                                    Constants.AWS_CLIENT_RETRY_MAX_BACKOFF_SECONDS)))
+                        .build())
                 .apiCallTimeout(Duration.ofMinutes(2))
                 .apiCallAttemptTimeout(Duration.ofSeconds(30)))
         .build();
@@ -257,4 +261,45 @@ public class RedisClient {
         .applyImmediately(true) // Set to true for immediate update, false to apply during maintenance window
         .build());
   }
+
+  @SneakyThrows
+  public void updateReplicaCount(String replicationGroupIdentifier, UpdateReplicaCountConfig updateReplicaCountConfig) {
+
+    ReplicationGroup replicationGroup = elastiCacheClient.describeReplicationGroups(
+        DescribeReplicationGroupsRequest.builder().replicationGroupId(replicationGroupIdentifier).build())
+        .replicationGroups().get(0);
+
+    // Check if cluster mode is enabled (CME) or disabled (CMD)
+    boolean clusterModeEnabled = replicationGroup.clusterEnabled() != null && replicationGroup.clusterEnabled();
+
+    // For CMD there is a single node group
+    List<NodeGroup> nodeGroups = replicationGroup.nodeGroups();
+
+    // Compute current replicas-per-shard (assume uniform; if not, we'll still set
+    // uniformly)
+    int current = nodeGroups.get(0).nodeGroupMembers().size() - 1;
+
+    if (updateReplicaCountConfig.getReplicasPerNodeGroup() == current) {
+      log.info("No change: replicas per shard already {}", current);
+      return;
+    }
+
+    if (clusterModeEnabled) {
+      // For Cluster Mode Enabled (CME), use increaseReplicaCount/decreaseReplicaCount
+      if (updateReplicaCountConfig.getReplicasPerNodeGroup() > current) {
+        elastiCacheClient.increaseReplicaCount(IncreaseReplicaCountRequest.builder()
+            .replicationGroupId(replicationGroupIdentifier)
+            .newReplicaCount(updateReplicaCountConfig.getReplicasPerNodeGroup())
+            .applyImmediately(true).build());
+      } else {
+        elastiCacheClient.decreaseReplicaCount(DecreaseReplicaCountRequest.builder()
+            .replicationGroupId(replicationGroupIdentifier)
+            .newReplicaCount(updateReplicaCountConfig.getReplicasPerNodeGroup())
+            .applyImmediately(true).build());
+      }
+    } else {
+      log.info("Changing replica count for Cluster Mode Disabled (CMD) replication groups is not supported");
+    }
+  }
+
 }

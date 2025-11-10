@@ -15,7 +15,9 @@ public enum ApplicationError {
   SECURITY_GROUP_NOT_FOUND(ErrorCategory.ODIN_ERROR, "No security group found"),
   CORRUPTED_STATE_FILE(ErrorCategory.ODIN_ERROR, "Corrupted state file"),
   REPLICATION_GROUP_WAIT_TIMEOUT(
-      ErrorCategory.AWS_ERROR, "Timeout waiting for Replication Group [%s] to be %s");
+      ErrorCategory.AWS_ERROR, "Timeout waiting for Replication Group [%s] to be %s"),
+  NODE_TYPE_UPDATE_FAILED(ErrorCategory.AWS_ERROR, "Node type update failed. Expected: %s, Got: %s");
+
 
   final ErrorCategory category;
   final String message;

@@ -1,5 +1,8 @@
 package com.dream11.redis.service;
 
+import java.util.List;
+import java.util.Map;
+
 import com.dream11.redis.Application;
 import com.dream11.redis.client.RedisClient;
 import com.dream11.redis.config.metadata.ComponentMetadata;
@@ -7,25 +10,31 @@ import com.dream11.redis.config.metadata.aws.AwsAccountData;
 import com.dream11.redis.config.metadata.aws.RedisData;
 import com.dream11.redis.config.user.DeployConfig;
 import com.dream11.redis.config.user.UpdateNodeTypeConfig;
+import com.dream11.redis.config.user.UpdateReplicaCountConfig;
 import com.dream11.redis.constant.Constants;
+import com.dream11.redis.error.ApplicationError;
 import com.dream11.redis.exception.GenericApplicationException;
 import com.dream11.redis.util.ApplicationUtil;
 import com.google.inject.Inject;
-import java.util.List;
-import java.util.Map;
+
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.elasticache.model.ReplicationGroup;
 
 @Slf4j
-@RequiredArgsConstructor(onConstructor = @__({@Inject}))
+@RequiredArgsConstructor(onConstructor = @__({ @Inject }))
 public class RedisService {
-  @NonNull final DeployConfig deployConfig;
-  @NonNull final ComponentMetadata componentMetadata;
-  @NonNull final RedisClient redisClient;
-  @NonNull final AwsAccountData awsAccountData;
-  @NonNull final RedisData redisData;
+  @NonNull
+  final DeployConfig deployConfig;
+  @NonNull
+  final ComponentMetadata componentMetadata;
+  @NonNull
+  final RedisClient redisClient;
+  @NonNull
+  final AwsAccountData awsAccountData;
+  @NonNull
+  final RedisData redisData;
 
   public void deploy() {
 
@@ -34,16 +43,14 @@ public class RedisService {
       identifier = ApplicationUtil.generateRandomId(4);
       Application.getState().setIdentifier(identifier);
     }
-    String name =
-        String.join(
-            "-", this.componentMetadata.getComponentName(), this.componentMetadata.getEnvName());
+    String name = String.join(
+        "-", this.componentMetadata.getComponentName(), this.componentMetadata.getEnvName());
 
-    Map<String, String> tags =
-        ApplicationUtil.merge(
-            List.of(
-                this.deployConfig.getTags(),
-                this.awsAccountData.getTags(),
-                Constants.COMPONENT_TAGS));
+    Map<String, String> tags = ApplicationUtil.merge(
+        List.of(
+            this.deployConfig.getTags(),
+            this.awsAccountData.getTags(),
+            Constants.COMPONENT_TAGS));
 
     createReplicationGroupAndWait(name, identifier, tags);
     log.info("Redis cluster deployment completed successfully");
@@ -66,8 +73,7 @@ public class RedisService {
           Constants.REPLICATION_GROUP_WAIT_RETRY_TIMEOUT,
           Constants.REPLICATION_GROUP_WAIT_RETRY_INTERVAL);
       log.info("Replication group is now available: {}", replicationGroupIdentifier);
-      ReplicationGroup replicationGroup =
-          redisClient.getReplicationGroup(replicationGroupIdentifier);
+      ReplicationGroup replicationGroup = redisClient.getReplicationGroup(replicationGroupIdentifier);
 
       Application.getState().setReplicationGroupIdentifier(replicationGroupIdentifier);
       if (deployConfig.getNumNodeGroups() > 1) {
@@ -100,7 +106,7 @@ public class RedisService {
         updateNodeTypeConfig);
     String currentCacheNodeType = this.redisClient.getCacheNodeType(replicationGroupId);
     String desiredCacheNodeType = updateNodeTypeConfig.getCacheNodeType();
-    if(currentCacheNodeType.equals(desiredCacheNodeType)) {
+    if (currentCacheNodeType.equals(desiredCacheNodeType)) {
       log.info("Cache node type is already {}, no update needed", currentCacheNodeType);
       return;
     }
@@ -117,12 +123,22 @@ public class RedisService {
     log.info("Replication group modification completed, verifying node type: {}", replicationGroupId);
     String updatedNodeType = this.redisClient.getCacheNodeType(replicationGroupId);
     if (!updatedNodeType.equals(desiredCacheNodeType)) {
-        throw new GenericApplicationException(
-            String.format("Node type update failed. Expected: %s, Got: %s",
-                desiredCacheNodeType, updatedNodeType));
+      throw new GenericApplicationException(ApplicationError.NODE_TYPE_UPDATE_FAILED, desiredCacheNodeType, updatedNodeType);
     }
     log.info("Node type update completed successfully for replication group: {}", replicationGroupId);
   }
 
+  public void updateReplicaCount(@NonNull UpdateReplicaCountConfig updateReplicaCountConfig) {
+    log.info("Updating replica count...");
+    String replicationGroupIdentifier = Application.getState().getReplicationGroupIdentifier();
+    redisClient.updateReplicaCount(replicationGroupIdentifier, updateReplicaCountConfig);
+    log.info("Waiting for Replication group to become available: {}", replicationGroupIdentifier);
+    this.redisClient.waitUntilReplicationGroupAvailable(
+        replicationGroupIdentifier,
+        Constants.REPLICATION_GROUP_WAIT_RETRY_TIMEOUT,
+        Constants.REPLICATION_GROUP_WAIT_RETRY_INTERVAL);
+    log.info("Replication group is now available: {}", replicationGroupIdentifier);
+
+  }
 
 }

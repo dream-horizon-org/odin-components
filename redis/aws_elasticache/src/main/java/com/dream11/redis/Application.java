@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,7 @@ import com.dream11.redis.config.metadata.aws.AwsAccountData;
 import com.dream11.redis.config.metadata.aws.RedisData;
 import com.dream11.redis.config.user.DeployConfig;
 import com.dream11.redis.config.user.UpdateNodeTypeConfig;
+import com.dream11.redis.config.user.UpdateReplicaCountConfig;
 import com.dream11.redis.constant.Constants;
 import com.dream11.redis.constant.Operations;
 import com.dream11.redis.error.ApplicationError;
@@ -32,6 +34,7 @@ import com.dream11.redis.operation.Deploy;
 import com.dream11.redis.operation.Operation;
 import com.dream11.redis.operation.Undeploy;
 import com.dream11.redis.operation.UpdateNodeType;
+import com.dream11.redis.operation.UpdateReplicaCount;
 import com.dream11.redis.state.State;
 import com.dream11.redis.util.ApplicationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -57,19 +60,18 @@ import software.amazon.awssdk.awscore.exception.AwsServiceException;
 public class Application {
 
   @Getter
-  static final ObjectMapper objectMapper =
-      JsonMapper.builder()
-          .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-          .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-          .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
-          .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
-          .withConfigOverride(
-              ArrayNode.class, mutableConfigOverride -> mutableConfigOverride.setMergeable(false))
-          .build();
+  static final ObjectMapper objectMapper = JsonMapper.builder()
+      .configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
+      .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+      .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
+      .disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+      .withConfigOverride(
+          ArrayNode.class, mutableConfigOverride -> mutableConfigOverride.setMergeable(false))
+      .build();
 
   @Getter
-  static final ExecutorService executorService =
-      new ThreadPoolExecutor(0, Integer.MAX_VALUE, 0L, TimeUnit.SECONDS, new SynchronousQueue<>());
+  static final ExecutorService executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 0L, TimeUnit.SECONDS,
+      new SynchronousQueue<>());
 
   ComponentMetadata componentMetadata;
   String config;
@@ -80,11 +82,14 @@ public class Application {
   RedisData redisData;
   RedisClient redisClient;
 
-  @Getter @Setter static State state;
+  @Getter
+  @Setter
+  static State state;
 
   @SneakyThrows
   public static void main(String[] args) {
-    // Setting error stream to null, to avoid library errors like guice, otherwise errors will be
+    // Setting error stream to null, to avoid library errors like guice, otherwise
+    // errors will be
     // printed twice in CLI
     System.setErr(new PrintStream(OutputStream.nullOutputStream()));
     try {
@@ -149,26 +154,38 @@ public class Application {
   @SneakyThrows
   void executeOperation() {
     Class<? extends Operation> operationClass;
-    operationClass =
-        switch (Operations.fromValue(this.operationName)) {
-          case DEPLOY -> {
-            this.deployConfig =
-                Application.getObjectMapper().readValue(this.config, DeployConfig.class);
-            yield Deploy.class;
-          }
-          case UNDEPLOY -> Undeploy.class;
-          case UPDATE_NODE_TYPE -> {
-            this.deployConfig = Application.getState().getDeployConfig();
-            this.deployConfig = this.deployConfig.mergeWith(this.config);
-            UpdateNodeTypeConfig updateNodeTypeConfig = Application.getObjectMapper().readValue(this.config, UpdateNodeTypeConfig.class);
-            modules.add(
-                    OptionalConfigModule.<UpdateNodeTypeConfig>builder()
-                            .clazz(UpdateNodeTypeConfig.class)
-                            .config(updateNodeTypeConfig)
-                            .build());
-            yield UpdateNodeType.class;
-          }
-        };
+    List<Module> modules = new ArrayList<>();
+    operationClass = switch (Operations.fromValue(this.operationName)) {
+      case DEPLOY -> {
+        this.deployConfig = Application.getObjectMapper().readValue(this.config, DeployConfig.class);
+        yield Deploy.class;
+      }
+      case UNDEPLOY -> Undeploy.class;
+      case UPDATE_NODE_TYPE -> {
+        this.deployConfig = Application.getState().getDeployConfig();
+        this.deployConfig = this.deployConfig.mergeWith(this.config);
+        UpdateNodeTypeConfig updateNodeTypeConfig = Application.getObjectMapper().readValue(this.config,
+            UpdateNodeTypeConfig.class);
+        modules.add(
+            OptionalConfigModule.<UpdateNodeTypeConfig>builder()
+                .clazz(UpdateNodeTypeConfig.class)
+                .config(updateNodeTypeConfig)
+                .build());
+        yield UpdateNodeType.class;
+      }
+      case UPDATE_REPLICA_COUNT -> {
+        this.deployConfig = Application.getState().getDeployConfig();
+        this.deployConfig = this.deployConfig.mergeWith(this.config);
+        UpdateReplicaCountConfig updateReplicaCountConfig = Application.getObjectMapper().readValue(this.config,
+            UpdateReplicaCountConfig.class);
+        modules.add(
+            OptionalConfigModule.<UpdateReplicaCountConfig>builder()
+                .clazz(UpdateReplicaCountConfig.class)
+                .config(updateReplicaCountConfig)
+                .build());
+        yield UpdateReplicaCount.class;
+      }
+    };
 
     if (Operations.fromValue(this.operationName).equals(Operations.UNDEPLOY)) {
       log.info("Deleting all created resources");
@@ -176,7 +193,8 @@ public class Application {
       log.info("Executing operation:[{}]", Operations.fromValue(this.operationName));
     }
 
-    this.initializeGuiceModules(this.getGuiceModules()).getInstance(operationClass).execute();
+    modules.addAll(this.getGuiceModules());
+    this.initializeGuiceModules(modules).getInstance(operationClass).execute();
     if (Operations.fromValue(this.operationName).equals(Operations.DEPLOY)) {
       Application.getState().setDeployConfig(this.deployConfig);
     }
@@ -205,22 +223,19 @@ public class Application {
 
   @SneakyThrows
   void readConfigFromEnvVariables() {
-    JsonNode node =
-        Application.getObjectMapper().readTree(System.getenv(Constants.COMPONENT_METADATA));
-    this.componentMetadata =
-        Application.getObjectMapper().treeToValue(node, ComponentMetadata.class);
+    JsonNode node = Application.getObjectMapper().readTree(System.getenv(Constants.COMPONENT_METADATA));
+    this.componentMetadata = Application.getObjectMapper().treeToValue(node, ComponentMetadata.class);
     this.componentMetadata.validate();
-    this.awsAccountData =
-        Application.getObjectMapper()
-            .convertValue(
-                this.componentMetadata.getCloudProviderDetails().getAccount().getData(),
-                AwsAccountData.class);
+    this.awsAccountData = Application.getObjectMapper()
+        .convertValue(
+            this.componentMetadata.getCloudProviderDetails().getAccount().getData(),
+            AwsAccountData.class);
     this.awsAccountData.validate();
-    this.redisData =
-        ApplicationUtil.getServiceWithCategory(
-            this.componentMetadata.getCloudProviderDetails().getAccount().getServices(),
-            Constants.ELASTICACHE_CATEGORY,
-            RedisData.class);
+    // ToDo Evaluate if we need redisData
+    this.redisData = ApplicationUtil.getServiceWithCategory(
+        this.componentMetadata.getCloudProviderDetails().getAccount().getServices(),
+        Constants.ELASTICACHE_CATEGORY,
+        RedisData.class);
     this.redisData.validate();
     this.config = System.getenv(Constants.CONFIG);
   }
