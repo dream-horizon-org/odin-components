@@ -2,8 +2,16 @@
 set -e
 
 export KUBECONFIG={{ componentMetadata.kubeConfigPath }}
-export RELEASE_NAME={{ componentMetadata.name }}
 export NAMESPACE={{ componentMetadata.envName }}
+
+
+if [[ -f state.json ]] && jq -e '.releaseName' state.json > /dev/null; then
+    RELEASE_NAME=$(jq -r '.releaseName' state.json)
+    echo "Using existing RELEASE_NAME from state.json: ${RELEASE_NAME}"
+else
+    echo "No state file found for component" 1>&2
+    exit 1
+fi 
 
 function get_endpoints() {
   kubectl get endpoints -n ${NAMESPACE} -l app.kubernetes.io/instance=${RELEASE_NAME},app.kubernetes.io/component=$1 | grep headless | awk '{gsub(":[0-9]+", "", $2); print $2}'

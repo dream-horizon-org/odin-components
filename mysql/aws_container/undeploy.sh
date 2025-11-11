@@ -5,8 +5,15 @@ setup_error_handling
 
 {
     export KUBECONFIG={{ componentMetadata.kubeConfigPath }}
-    export RELEASE_NAME={{ componentMetadata.name }}
     export NAMESPACE={{ componentMetadata.envName }}
+
+    if [[ -f state.json ]] && jq -e '.releaseName' state.json > /dev/null; then
+        RELEASE_NAME=$(jq -r '.releaseName' state.json)
+        echo "Using existing RELEASE_NAME from state.json: ${RELEASE_NAME}"
+    else
+        echo "No state file found for component" 1>&2
+        exit 1
+    fi    
 
     echo "Uninstalling mysql helm chart..."
 

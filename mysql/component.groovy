@@ -101,10 +101,14 @@ Odin.component {
     flavour {
         name "aws_container"
         deploy {
+            String lastState = getLastState()
+            if (lastState != null && !lastState.isEmpty()) {
+                run "echo '${lastState}' > state.json"
+            }            
             downloadLogging.delegate = delegate
             downloadLogging()            
-            run "PREVIOUS_SHA='${getLastState()}' bash deploy.sh"
-            out "sha256sum values.yaml"
+            run "bash deploy.sh"
+            out "cat state.json"
 
             discovery {
                 run "bash discovery.sh"
@@ -123,9 +127,16 @@ Odin.component {
         }
 
         undeploy {
+            String lastState = getLastState()    
+            if (lastState != null && !lastState.isEmpty()) {
+                run "echo '${lastState}' > state.json"
+            }else{
+                run "echo '{}' > state.json"
+            }                    
             downloadLogging.delegate = delegate
             downloadLogging()            
             run "bash undeploy.sh"
+            out "cat state.json"
         }
     }   
 
