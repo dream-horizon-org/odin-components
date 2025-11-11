@@ -1,7 +1,7 @@
 image:
   registry: {{ flavourConfig.imageRegistry }}
   repository: {{ flavourConfig.imageRepository }}
-  tag: {{ baseConfig.version }}
+  tag: {{ flavourConfig.imageTag }}
 
 auth:
   username: {{ flavourConfig.username }}
@@ -19,13 +19,13 @@ architecture: replication
 primary:
   resources:
     requests:
-      memory: {{ flavourConfig.resources.requests.memory }}
-      cpu: {{ flavourConfig.resources.requests.cpu }}
-      ephemeral-storage: {{ flavourConfig.resources.requests.ephemeralStorage }}
+      memory: {{ flavourConfig.writer.resources.requests.memory }}
+      cpu: {{ flavourConfig.writer.resources.requests.cpu }}
+      ephemeral-storage: {{ flavourConfig.writer.resources.requests.ephemeralStorage }}
     limits:
-      memory: {{ flavourConfig.resources.limits.memory }}
-      cpu: {{ flavourConfig.resources.limits.cpu }}
-      ephemeral-storage: {{ flavourConfig.resources.limits.ephemeralStorage }}
+      memory: {{ flavourConfig.writer.resources.limits.memory }}
+      cpu: {{ flavourConfig.writer.resources.limits.cpu }}
+      ephemeral-storage: {{ flavourConfig.writer.resources.limits.ephemeralStorage }}
 
   {% if componentMetadata.annotations.writer %}
   service:
@@ -35,8 +35,36 @@ primary:
       {% endfor %}
   {% endif %}
 
+  {% if flavourConfig.writer.tolerations %}
+  tolerations:
+    {% for toleration in flavourConfig.writer.tolerations %}
+    - key: {{ toleration.key }}
+      operator: {{ toleration.operator }}
+      {% if toleration.value %}
+      value: {{ toleration.value }}
+      {% endif %}
+      {% if toleration.effect %}
+      effect: {{ toleration.effect }}
+      {% endif %}
+      {% if toleration.tolerationSeconds %}
+      tolerationSeconds: {{ toleration.tolerationSeconds }}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+
+  {% if flavourConfig.writer.nodeSelector %}
   nodeSelector:
-    node_name: {{ flavourConfig.nodeSelector }}
+    {% for key, value in flavourConfig.writer.nodeSelector.items() %}
+    {{ key }}: {{ value }}
+    {% endfor %}
+  {% endif %}
+  {% if flavourConfig.writer.persistence %}
+  persistence:
+    enabled: true
+    size: {{ flavourConfig.writer.persistence.size }}
+    storageClass: {{ flavourConfig.storageClass }}
+  {% endif %}
+
   configuration: |-
     [mysqld]
     server-id=1
@@ -73,13 +101,31 @@ primary:
 secondary: 
   resources:
     requests:
-      memory: {{ flavourConfig.resources.requests.memory }}
-      cpu: {{ flavourConfig.resources.requests.cpu }}
-      ephemeral-storage: {{ flavourConfig.resources.requests.ephemeralStorage }}
+      memory: {{ flavourConfig.reader.resources.requests.memory }}
+      cpu: {{ flavourConfig.reader.resources.requests.cpu }}
+      ephemeral-storage: {{ flavourConfig.reader.resources.requests.ephemeralStorage }}
     limits:
-      memory: {{ flavourConfig.resources.limits.memory }}
-      cpu: {{ flavourConfig.resources.limits.cpu }}
-      ephemeral-storage: {{ flavourConfig.resources.limits.ephemeralStorage }}
+      memory: {{ flavourConfig.reader.resources.limits.memory }}
+      cpu: {{ flavourConfig.reader.resources.limits.cpu }}
+      ephemeral-storage: {{ flavourConfig.reader.resources.limits.ephemeralStorage }}
+    
+    {% if flavourConfig.reader.tolerations %}
+    tolerations:
+      {% for toleration in flavourConfig.reader.tolerations %}
+      - key: {{ toleration.key }}
+        operator: {{ toleration.operator }}
+        {% if toleration.value %}
+        value: {{ toleration.value }}
+        {% endif %}
+        {% if toleration.effect %}
+        effect: {{ toleration.effect }}
+        {% endif %}
+        {% if toleration.tolerationSeconds %}
+        tolerationSeconds: {{ toleration.tolerationSeconds }}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
 
   {% if componentMetadata.annotations.reader %}
   service:
@@ -89,9 +135,17 @@ secondary:
       {% endfor %}
   {% endif %}
 
-  replicaCount: {{ flavourConfig.readerCount }}
+  replicaCount: {{ flavourConfig.reader.replicaCount }}
+  {% if flavourConfig.reader.nodeSelector %}
   nodeSelector:
-    node_name: {{ flavourConfig.nodeSelector }}
+    {% for key, value in flavourConfig.reader.nodeSelector.items() %}
+    {{ key }}: {{ value }}
+    {% endfor %}
+  {% endif %}
+  persistence:
+    enabled: true
+    size: {{ flavourConfig.reader.persistence.size }}
+    storageClass: {{ flavourConfig.storageClass }}    
 
 initdbScripts:
   init.sh: |

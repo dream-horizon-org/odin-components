@@ -18,75 +18,166 @@
       "description": "The image repository from which the docker image needs to be pulled",
       "type": "string"
     },
-    "readerCount": {
-      "description": "Number of MySQL reader replicas",
-      "type": "integer",
-      "minimum": 1
-    },
+    "imageTag": {
+      "description": "The image tag for mysql docker image",
+      "type": "string"
+    },    
     "storageClass": {
       "description": "MySQL persistent volume storage class",
       "type": "string"
     },
-    "nodeSelector": {
-      "description": "Node labels for MySQL pods assignment",
-      "type": "string"
-    },
-    "resources": {
+    "writer": {
       "type": "object",
       "properties": {
-        "limits": {
-          "description": "The resources limits for MySQL containers",
+        "resources": {
           "type": "object",
           "properties": {
-            "cpu": {
-              "type": "string"
+            "limits": {
+              "description": "The resources limits for MySQL writer containers",
+              "type": "object",
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                },
+                "ephemeralStorage": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "cpu",
+                "memory",
+                "ephemeralStorage"
+              ]
             },
-            "memory": {
-              "type": "string"
-            },
-            "ephemeralStorage": {
-              "type": "string"
+            "requests": {
+              "description": "The resources requests for MySQL writer containers",
+              "type": "object",
+              "properties": {
+                "cpu": {
+                  "type": "string"
+                },
+                "memory": {
+                  "type": "string"
+                },
+                "ephemeralStorage": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "cpu",
+                "memory",
+                "ephemeralStorage"
+              ]
             }
           },
           "required": [
-            "cpu",
-            "memory",
-            "ephemeralStorage"
+            "limits",
+            "requests"
           ]
         },
-        "requests": {
-          "description": "The resources requests for MySQL containers",
+        "tolerations": {
+          "description": "Tolerations for MySQL writer pods",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "operator": {
+                "type": "string",
+                "enum": ["Equal", "Exists"]
+              },
+              "value": {
+                "type": "string"
+              },
+              "effect": {
+                "type": "string",
+                "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"]
+              },
+              "tolerationSeconds": {
+                "type": "integer"
+              }
+            },
+            "required": ["key", "operator"]
+          }
+        },
+        "nodeSelector": {
+          "description": "Node labels for MySQL writer pods assignment",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "persistence": {
           "type": "object",
           "properties": {
-            "cpu": {
-              "type": "string"
-            },
-            "memory": {
-              "type": "string"
-            },
-            "ephemeralStorage": {
+            "size": {
+              "description": "Size of the persistent volume for MySQL writer",
               "type": "string"
             }
           },
-          "required": [
-            "cpu",
-            "memory",
-            "ephemeralStorage"
-          ]
+          "required": ["size"]
         }
       },
       "required": [
-        "limits",
-        "requests"
+        "resources"
       ]
-    }
+    },
+    "reader": {
+      "type": "object",
+      "properties": {
+        "resources": {
+          "$ref": "#/properties/writer/properties/resources"
+        },
+        "tolerations": {
+          "$ref": "#/properties/writer/properties/tolerations"
+        },
+        "nodeSelector": {
+          "$ref": "#/properties/writer/properties/nodeSelector"
+        },
+        "persistence": {
+          "$ref": "#/properties/writer/properties/persistence"
+        },
+        "replicaCount": {
+          "description": "Number of MySQL reader replicas",
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        }
+      },
+      "required": [
+        "resources"
+      ]
+    },
+  "binlog": {
+    "description": "MySQL binary logging configuration",
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": false,
+        "description": "Enable or disable MySQL binary logging"
+      },
+      "configuration": {
+        "type": "object",
+        "description": "Additional binlog configuration parameters",
+        "additionalProperties": true
+      }
+    },
+    "required": ["enabled"]
+  }    
   },
+
   "required": [
     "imageRegistry",
     "imageRepository",
-    "readerCount",
+    "imageTag",
     "storageClass",
-    "nodeSelector",
-    "resources"
+    "writer",
+    "reader"
   ]
 }
