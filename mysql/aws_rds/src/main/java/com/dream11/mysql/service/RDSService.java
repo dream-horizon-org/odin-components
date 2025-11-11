@@ -399,10 +399,7 @@ public class RDSService {
       this.handleTagUpdates();
     }
 
-    String updatedClusterParameterGroupName = this.handleClusterParameterGroupUpdate();
-    String updatedInstanceParameterGroupName = this.handleInstanceParameterGroupUpdate();
     String updatedEngineVersion = null;
-
     if (!Objects.equals(oldDeployConfig.getEngineVersion(), this.deployConfig.getEngineVersion())) {
       updatedEngineVersion =
           this.deployConfig.getVersion() + ".mysql_aurora." + this.deployConfig.getEngineVersion();
@@ -413,7 +410,7 @@ public class RDSService {
         clusterIdentifier,
         this.deployConfig,
         updatedEngineVersion,
-        updatedClusterParameterGroupName,
+        this.handleClusterParameterGroupUpdate(),
         this.updateClusterConfig.getApplyImmediately());
     if (this.updateClusterConfig.getApplyImmediately()) {
       log.info(
@@ -426,15 +423,14 @@ public class RDSService {
       log.info("Cluster is now available: {}", clusterIdentifier);
     }
 
-    List<Callable<Void>> tasks = new ArrayList<>();
     if (!Objects.equals(
         oldDeployConfig.getInstanceConfig(), this.deployConfig.getInstanceConfig())) {
-      tasks.addAll(this.handleDBInstanceUpdates(updatedInstanceParameterGroupName));
+      List<Callable<Void>> tasks =
+          new ArrayList<>(this.handleDBInstanceUpdates(this.handleInstanceParameterGroupUpdate()));
       if (this.updateClusterConfig.getApplyImmediately()) {
         log.info(
             "Waiting for {}s to let updates take effect on the DB instances",
-            Constants.DB_UPDATE_DELAY_INTERVAL.getSeconds(),
-            clusterIdentifier);
+            Constants.DB_UPDATE_DELAY_INTERVAL.getSeconds());
         Thread.sleep(Constants.DB_UPDATE_DELAY_INTERVAL.toMillis());
         ApplicationUtil.runOnExecutorService(tasks);
       }
@@ -510,25 +506,27 @@ public class RDSService {
           });
     }
 
-    for (Map.Entry<String, List<String>> entry :
-        Application.getState().getReaderInstanceIdentifiers().entrySet()) {
-      for (String readerInstanceIdentifier : entry.getValue()) {
-        log.info("Updating reader instance: {}", readerInstanceIdentifier);
-        this.rdsClient.updateDBInstance(
-            readerInstanceIdentifier,
-            this.deployConfig.getInstanceConfig(),
-            updatedInstanceParameterGroupName,
-            this.updateClusterConfig.getApplyImmediately());
-        tasks.add(
-            () -> {
-              log.info(
-                  "Waiting for reader instance to become available: {}", readerInstanceIdentifier);
-              this.rdsClient.waitUntilDBInstanceAvailable(readerInstanceIdentifier);
-              log.info("Reader instance update completed: {}", readerInstanceIdentifier);
-              return null;
+    Application.getState().getReaderInstanceIdentifiers().values().stream()
+        .flatMap(List::stream)
+        .forEach(
+            readerInstanceIdentifier -> {
+              log.info("Updating reader instance: {}", readerInstanceIdentifier);
+              this.rdsClient.updateDBInstance(
+                  readerInstanceIdentifier,
+                  this.deployConfig.getInstanceConfig(),
+                  updatedInstanceParameterGroupName,
+                  this.updateClusterConfig.getApplyImmediately());
+              tasks.add(
+                  () -> {
+                    log.info(
+                        "Waiting for reader instance to become available: {}",
+                        readerInstanceIdentifier);
+                    this.rdsClient.waitUntilDBInstanceAvailable(readerInstanceIdentifier);
+                    log.info("Reader instance update completed: {}", readerInstanceIdentifier);
+                    return null;
+                  });
             });
-      }
-    }
+
     return tasks;
   }
 
@@ -547,13 +545,12 @@ public class RDSService {
           tags);
     }
 
-    for (Map.Entry<String, List<String>> entry :
-        Application.getState().getReaderInstanceIdentifiers().entrySet()) {
-      for (String readerInstanceIdentifier : entry.getValue()) {
-        this.rdsClient.updateTagsForResource(
-            this.rdsClient.getDBInstance(readerInstanceIdentifier).dbInstanceArn(), tags);
-      }
-    }
+    Application.getState().getReaderInstanceIdentifiers().values().stream()
+        .flatMap(List::stream)
+        .forEach(
+            readerInstanceIdentifier ->
+                this.rdsClient.updateTagsForResource(
+                    this.rdsClient.getDBInstance(readerInstanceIdentifier).dbInstanceArn(), tags));
 
     if (Application.getState().getClusterParameterGroupName() != null) {
       this.rdsClient.updateTagsForResource(
@@ -625,7 +622,7 @@ public class RDSService {
           "Deleting DB writer instance: {}", Application.getState().getWriterInstanceIdentifier());
       this.rdsClient.deleteDBInstance(
           Application.getState().getWriterInstanceIdentifier(),
-          this.deployConfig != null ? this.deployConfig.getDeletionConfig() : null);
+          this.deployConfig.getDeletionConfig());
       tasks.add(
           () -> {
             log.info(
@@ -647,8 +644,7 @@ public class RDSService {
     if (Application.getState().getClusterIdentifier() != null) {
       log.info("Deleting DB cluster: {}", Application.getState().getClusterIdentifier());
       this.rdsClient.deleteDBCluster(
-          Application.getState().getClusterIdentifier(),
-          this.deployConfig != null ? this.deployConfig.getDeletionConfig() : null);
+          Application.getState().getClusterIdentifier(), this.deployConfig.getDeletionConfig());
       log.info(
           "Waiting for DB cluster to become deleted: {}",
           Application.getState().getClusterIdentifier());
