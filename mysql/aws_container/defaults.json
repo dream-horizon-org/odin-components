@@ -1,6 +1,6 @@
 {
-  "imageRegistry": "666019485799.dkr.ecr.us-east-1.amazonaws.com",
-  "imageRepository": "docker-artifacts/mysql",
+  "imageRegistry": "docker.io",
+  "imageRepository": "bitnamilegacy/mysql",
   "imageTag": "8.0.23",
   "storageClass": "ebs-gp3",
   "username": "test",
