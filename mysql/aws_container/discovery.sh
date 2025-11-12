@@ -1,5 +1,5 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 export KUBECONFIG={{ componentMetadata.kubeConfigPath }}
 export NAMESPACE={{ componentMetadata.envName }}
