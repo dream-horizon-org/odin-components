@@ -155,7 +155,7 @@ initdbScripts:
     fi
 
 metrics:
-  enabled: true
+  enabled: {{ flavourConfig.metrics.enabled }}
   image:
-    registry: docker.io
-    repository: bitnamilegacy/mysqld-exporter
+    registry: {{ flavourConfig.metrics.image.registry }}
+    repository: {{ flavourConfig.metrics.image.repository }}

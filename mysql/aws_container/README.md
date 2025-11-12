@@ -6,17 +6,18 @@ Deploy your MySQL in container
 
 #### Properties
 
-| Property          | Type              | Required | Description                                                         |
-|-------------------|-------------------|----------|---------------------------------------------------------------------|
-| `imageRegistry`   | string            | **Yes**  | The image registry from which the docker image needs to be pulled   |
-| `imageRepository` | string            | **Yes**  | The image repository from which the docker image needs to be pulled |
-| `imageTag`        | string            | **Yes**  | The image tag for mysql docker image                                |
-| `reader`          | [object](#reader) | **Yes**  |                                                                     |
-| `storageClass`    | string            | **Yes**  | MySQL persistent volume storage class                               |
-| `writer`          | [object](#writer) | **Yes**  |                                                                     |
-| `binlog`          | [object](#binlog) | No       | MySQL binary logging configuration                                  |
-| `password`        | string            | No       | password to connect to mysql                                        |
-| `username`        | string            | No       | username to connect to mysql                                        |
+| Property          | Type               | Required | Description                                                         |
+|-------------------|--------------------|----------|---------------------------------------------------------------------|
+| `imageRegistry`   | string             | **Yes**  | The image registry from which the docker image needs to be pulled   |
+| `imageRepository` | string             | **Yes**  | The image repository from which the docker image needs to be pulled |
+| `imageTag`        | string             | **Yes**  | The image tag for mysql docker image                                |
+| `reader`          | [object](#reader)  | **Yes**  |                                                                     |
+| `storageClass`    | string             | **Yes**  | MySQL persistent volume storage class                               |
+| `writer`          | [object](#writer)  | **Yes**  |                                                                     |
+| `binlog`          | [object](#binlog)  | No       | MySQL binary logging configuration                                  |
+| `metrics`         | [object](#metrics) | No       | MySQL metrics exporter configuration                                |
+| `password`        | string             | No       | password to connect to mysql                                        |
+| `username`        | string             | No       | username to connect to mysql                                        |
 
 #### binlog
 
@@ -35,6 +36,26 @@ Additional binlog configuration parameters
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
+
+#### metrics
+
+MySQL metrics exporter configuration
+
+##### Properties
+
+| Property  | Type             | Required | Description                              |
+|-----------|------------------|----------|------------------------------------------|
+| `enabled` | boolean          | **Yes**  | Enable or disable MySQL metrics exporter |
+| `image`   | [object](#image) | No       |                                          |
+
+##### image
+
+###### Properties
+
+| Property     | Type   | Required | Description                                         |
+|--------------|--------|----------|-----------------------------------------------------|
+| `registry`   | string | **Yes**  | The image registry for the metrics exporter image   |
+| `repository` | string | **Yes**  | The image repository for the metrics exporter image |
 
 #### reader
 

@@ -153,23 +153,51 @@
         "resources"
       ]
     },
-  "binlog": {
-    "description": "MySQL binary logging configuration",
-    "type": "object",
-    "properties": {
-      "enabled": {
-        "type": "boolean",
-        "default": false,
-        "description": "Enable or disable MySQL binary logging"
+    "binlog": {
+      "description": "MySQL binary logging configuration",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable or disable MySQL binary logging"
+        },
+        "configuration": {
+          "type": "object",
+          "description": "Additional binlog configuration parameters",
+          "additionalProperties": true
+        }
       },
-      "configuration": {
-        "type": "object",
-        "description": "Additional binlog configuration parameters",
-        "additionalProperties": true
-      }
+      "required": ["enabled"]
     },
-    "required": ["enabled"]
-  }    
+    "metrics": {
+      "description": "MySQL metrics exporter configuration",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable or disable MySQL metrics exporter"
+        },
+        "image": {
+          "type": "object",
+          "properties": {
+            "registry": {
+              "type": "string",
+              "default": "docker.io",
+              "description": "The image registry for the metrics exporter image"
+            },
+            "repository": {
+              "type": "string",
+              "default": "bitnamilegacy/mysqld-exporter",
+              "description": "The image repository for the metrics exporter image"
+            }
+          },
+          "required": ["registry", "repository"]
+        }
+      },
+      "required": ["enabled"]
+    }
   },
 
   "required": [

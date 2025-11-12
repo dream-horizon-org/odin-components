@@ -45,5 +45,12 @@
     "persistence": {
       "size": "10Gi"
     }
-  }  
+  },
+  "metrics": {
+    "enabled": true,
+    "image": {
+      "registry": "docker.io",
+      "repository": "bitnamilegacy/mysqld-exporter"
+    }
+  }
 }
