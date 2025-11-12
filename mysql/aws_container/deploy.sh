@@ -36,11 +36,9 @@ export CURRENT_SHA=$(sha256sum values.yaml | awk '{print $1}')
   if [[ "${CURRENT_SHA}" == "${PREVIOUS_SHA}" ]]; then
     echo "No changes to apply"
   else
-    aws ecr get-login-password \
-        --region ${REGION} | helm registry login \
-        --username AWS \
-        --password-stdin ${HELM_REGISTRY} 
-    helm upgrade --install ${RELEASE_NAME} ${HELM_CHART_NAME} --version ${HELM_CHART_VERSION} -n ${NAMESPACE} --values values.yaml --wait
+    helm repo add bitnami ${HELM_REPO}
+    helm repo update
+    helm upgrade --install ${RELEASE_NAME} bitnami/${HELM_CHART_NAME} --version ${HELM_CHART_VERSION} -n ${NAMESPACE} --values values.yaml --wait
     if [[ $? -ne 0 ]]; then
       echo "Mysql deployment failed. Please find pod description and logs below." 1>&2
 
