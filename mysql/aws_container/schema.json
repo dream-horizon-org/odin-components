@@ -199,7 +199,6 @@
       "required": ["enabled"]
     }
   },
-
   "required": [
     "imageRegistry",
     "imageRepository",
@@ -207,5 +206,6 @@
     "storageClass",
     "writer",
     "reader"
-  ]
+  ],
+  "additionalProperties": false  
 }
