@@ -124,9 +124,8 @@ public class RedisService {
     while (System.currentTimeMillis() < endTime) {
       try {
 
-        // Check status if replication group still exists
         String status = redisClient.getReplicationGroupStatus(replicationGroupId);
-        log.debug("Replication group {} deletion in progress. Current status: {}", replicationGroupId, status);
+        log.info("Replication group {} deletion in progress. Current status: {}", replicationGroupId, status);
 
         Thread.sleep(Constants.REPLICATION_GROUP_WAIT_RETRY_INTERVAL.toMillis());
 
