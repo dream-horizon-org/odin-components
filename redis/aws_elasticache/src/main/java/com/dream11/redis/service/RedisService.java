@@ -13,6 +13,7 @@ import com.dream11.redis.config.user.DeployConfig;
 import com.dream11.redis.constant.Constants;
 import com.dream11.redis.error.ApplicationError;
 import com.dream11.redis.exception.GenericApplicationException;
+import com.dream11.redis.state.State;
 import com.dream11.redis.util.ApplicationUtil;
 import com.google.inject.Inject;
 
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.elasticache.model.ReplicationGroup;
+import software.amazon.awssdk.services.elasticache.model.ReplicationGroupNotFoundException;
 
 @Slf4j
 @RequiredArgsConstructor(onConstructor = @__({ @Inject }))
@@ -35,6 +37,22 @@ public class RedisService {
   final AwsAccountData awsAccountData;
   @NonNull
   final RedisData redisData;
+
+  public void reconcileState() {
+    State state = Application.getState();
+
+    if (state.getReplicationGroupIdentifier() != null) {
+      try {
+        redisClient.getReplicationGroup(state.getReplicationGroupIdentifier());
+        log.debug("Found replication group: {}", state.getReplicationGroupIdentifier());
+      } catch (ReplicationGroupNotFoundException ex) {
+        log.warn(
+            "Redis replicationGroup :[{}] from state does not exist. Updating state.",
+            state.getReplicationGroupIdentifier());
+        state.setReplicationGroupIdentifier(null);
+      }
+    }
+  }
 
   public void deploy() {
 
