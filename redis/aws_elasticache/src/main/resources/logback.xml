@@ -8,8 +8,7 @@
     </encoder>
   </appender>
   <logger name="org.hibernate.validator" level="error"/>
-  <logger name="io.grpc.netty" level="info"/>
-  <logger name="io.fabric8.kubernetes" level="info"/>
+  <logger name="software.amazon.awssdk" level="info"/>
   <root level="${LOG_LEVEL:-info}">
     <appender-ref ref="STDOUT"/>
   </root>

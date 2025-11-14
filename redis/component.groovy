@@ -2,7 +2,7 @@ import com.dream11.Odin
 import com.dream11.OdinUtil
 
 Odin.component {
-    dslVersion "0.0.2"
+    dslVersion "v0.0.2"
 
     flavour {
         name "aws_elasticache"

@@ -5,11 +5,9 @@ import java.util.List;
 import java.util.Map;
 
 import com.dream11.redis.config.metadata.aws.RedisData;
-import com.dream11.redis.config.user.CloudWatchLogsDetails;
 import com.dream11.redis.config.user.DeployConfig;
 import com.dream11.redis.config.user.DestinationDetails;
 import com.dream11.redis.config.user.DestinationType;
-import com.dream11.redis.config.user.KinesisFirehoseDetails;
 import com.dream11.redis.config.user.LogDeliveryConfig;
 import com.dream11.redis.constant.Constants;
 import com.dream11.redis.error.ApplicationError;
@@ -17,7 +15,6 @@ import com.dream11.redis.exception.GenericApplicationException;
 import com.dream11.redis.exception.ReplicationGroupNotFoundException;
 import com.dream11.redis.util.ApplicationUtil;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
 import software.amazon.awssdk.regions.Region;
@@ -27,7 +24,6 @@ import software.amazon.awssdk.services.elasticache.model.CloudWatchLogsDestinati
 import software.amazon.awssdk.services.elasticache.model.CreateReplicationGroupRequest;
 import software.amazon.awssdk.services.elasticache.model.DeleteReplicationGroupRequest;
 import software.amazon.awssdk.services.elasticache.model.DescribeReplicationGroupsRequest;
-import software.amazon.awssdk.services.elasticache.model.DescribeReplicationGroupsResponse;
 import software.amazon.awssdk.services.elasticache.model.KinesisFirehoseDestinationDetails;
 import software.amazon.awssdk.services.elasticache.model.LogDeliveryConfigurationRequest;
 import software.amazon.awssdk.services.elasticache.model.ReplicationGroup;
@@ -226,26 +222,14 @@ public class RedisClient {
               DestinationDetails userDestDetails = config.getDestinationDetails();
 
               if (config.getDestinationType() == DestinationType.CLOUDWATCH_LOGS) {
-                if (userDestDetails.getCloudWatchLogsDetails() == null) {
-                  throw new GenericApplicationException(
-                      ApplicationError.CONSTRAINT_VIOLATION,
-                      "cloudWatchLogsDetails is required when destinationType is cloudwatch-logs");
-                }
-                CloudWatchLogsDetails cloudWatchDetails = userDestDetails.getCloudWatchLogsDetails();
                 destDetailsBuilder.cloudWatchLogsDetails(
                     CloudWatchLogsDestinationDetails.builder()
-                        .logGroup(cloudWatchDetails.getLogGroup())
+                        .logGroup(userDestDetails.getCloudWatchLogsDetails().getLogGroup())
                         .build());
               } else if (config.getDestinationType() == DestinationType.KINESIS_FIREHOSE) {
-                if (userDestDetails.getKinesisFirehoseDetails() == null) {
-                  throw new GenericApplicationException(
-                      ApplicationError.CONSTRAINT_VIOLATION,
-                      "kinesisFirehoseDetails is required when destinationType is kinesis-firehose");
-                }
-                KinesisFirehoseDetails kinesisDetails = userDestDetails.getKinesisFirehoseDetails();
                 destDetailsBuilder.kinesisFirehoseDetails(
                     KinesisFirehoseDestinationDetails.builder()
-                        .deliveryStream(kinesisDetails.getDeliveryStream())
+                        .deliveryStream(userDestDetails.getKinesisFirehoseDetails().getDeliveryStream())
                         .build());
               }
 
@@ -298,46 +282,4 @@ public class RedisClient {
     log.info("Delete request submitted for replication group: {}", replicationGroupId);
   }
 
-  /**
-   * Waits for and confirms that a replication group has been successfully
-   * deleted.
-   * Polls the replication group status until it no longer exists or a timeout is
-   * reached.
-   *
-   * @param replicationGroupId The identifier of the replication group to check
-   * @throws GenericApplicationException if the deletion does not complete within
-   *                                     the timeout period
-   */
-  @SneakyThrows
-  public void waitForReplicationGroupDeletion(String replicationGroupId) {
-    log.info("Waiting for replication group {} to be deleted...", replicationGroupId);
-
-    long endTime = System.currentTimeMillis() + Constants.REPLICATION_GROUP_WAIT_RETRY_TIMEOUT.toMillis();
-
-    while (System.currentTimeMillis() < endTime) {
-      try {
-        DescribeReplicationGroupsResponse replicationGroupResponse = elastiCacheClient.describeReplicationGroups(
-            DescribeReplicationGroupsRequest.builder()
-                .replicationGroupId(replicationGroupId)
-                .build());
-
-        // Check status if replication group still exists
-        String status = replicationGroupResponse.replicationGroups().get(0).status();
-        log.info("Replication group {} deletion in progress. Current status: {}", replicationGroupId, status);
-
-        Thread.sleep(Constants.REPLICATION_GROUP_WAIT_RETRY_INTERVAL.toMillis());
-
-      } catch (software.amazon.awssdk.services.elasticache.model.ReplicationGroupNotFoundException e) {
-        // Replication group not found means it's been successfully deleted
-        log.info("Replication group {} has been successfully deleted", replicationGroupId);
-        return;
-      }
-    }
-
-    throw new GenericApplicationException(
-        ApplicationError.REPLICATION_GROUP_WAIT_TIMEOUT,
-        replicationGroupId,
-        "deleted");
-
-  }
 }
