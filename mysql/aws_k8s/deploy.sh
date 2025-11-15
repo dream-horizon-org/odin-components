@@ -4,17 +4,6 @@ source ./logging.sh
 source ./constants
 setup_error_handling
 
-if [[ -f state.json ]] && jq -e '.releaseName' state.json > /dev/null; then
-  export PREVIOUS_SHA=$(jq -r '.sha' state.json)
-  export RELEASE_NAME=$(jq -r '.releaseName' state.json)  
-  echo "Using existing RELEASE_NAME from state.json: ${RELEASE_NAME}" | log_with_timestamp
-else
-  export PREVIOUS_SHA=""
-  export RELEASE_NAME="{{ componentMetadata.name }}-${RANDOM}"
-  echo "Generated new RELEASE_NAME: ${RELEASE_NAME}" | log_with_timestamp
-fi
-export CURRENT_SHA=$(sha256sum values.yaml | awk '{print $1}')
-
 update_state() {
   status=$?
   if [[ $status -eq 0 ]]; then
@@ -29,9 +18,16 @@ function print_marker() {
   echo "=========================================================================================="
 }
 
-
-exit 0
-
+if [[ -f state.json ]] && jq -e '.releaseName' state.json > /dev/null; then
+  export PREVIOUS_SHA=$(jq -r '.sha' state.json)
+  export RELEASE_NAME=$(jq -r '.releaseName' state.json)
+  echo "Using existing RELEASE_NAME from state.json: ${RELEASE_NAME}" | log_with_timestamp
+else
+  export PREVIOUS_SHA=""
+  export RELEASE_NAME="{{ componentMetadata.name }}-${RANDOM}"
+  echo "Generated new RELEASE_NAME: ${RELEASE_NAME}" | log_with_timestamp
+fi
+export CURRENT_SHA=$(sha256sum values.yaml | awk '{print $1}')
 
 {
   export NAMESPACE={{ componentMetadata.envName }}
