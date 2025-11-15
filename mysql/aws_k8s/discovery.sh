@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
+source ./logging.sh
+setup_error_handling
+{
 export KUBECONFIG={{ componentMetadata.kubeConfigPath }}
 export NAMESPACE={{ componentMetadata.envName }}
-
 
 if [[ -f state.json ]] && jq -e '.releaseName' state.json > /dev/null; then
     RELEASE_NAME=$(jq -r '.releaseName' state.json)
@@ -25,3 +26,4 @@ else
   READER_ENDPOINT=$(get_endpoints secondary)
 fi
 echo "{\"writer\":\"${WRITER_ENDPOINT}\", \"reader\":\"${READER_ENDPOINT}\"}"
+} 2> >(log_errors_with_timestamp) | log_with_timestamp

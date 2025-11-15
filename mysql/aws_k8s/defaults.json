@@ -1,10 +1,8 @@
 {
   "imageRegistry": "docker.io",
   "imageRepository": "bitnamilegacy/mysql",
-  "imageTag": "8.0.23",
+  "imageTag": ".23",
   "storageClass": "ebs-gp3",
-  "username": "test",
-  "password": "test123",
   "reader": {
     "resources": {
       "limits": {

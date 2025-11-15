@@ -4,6 +4,17 @@ source ./logging.sh
 source ./constants
 setup_error_handling
 
+if [[ -f state.json ]] && jq -e '.releaseName' state.json > /dev/null; then
+  export PREVIOUS_SHA=$(jq -r '.sha' state.json)
+  export RELEASE_NAME=$(jq -r '.releaseName' state.json)  
+  echo "Using existing RELEASE_NAME from state.json: ${RELEASE_NAME}" | log_with_timestamp
+else
+  export PREVIOUS_SHA=""
+  export RELEASE_NAME="{{ componentMetadata.name }}-${RANDOM}"
+  echo "Generated new RELEASE_NAME: ${RELEASE_NAME}" | log_with_timestamp
+fi
+export CURRENT_SHA=$(sha256sum values.yaml | awk '{print $1}')
+
 update_state() {
   status=$?
   if [[ $status -eq 0 ]]; then
@@ -18,30 +29,20 @@ function print_marker() {
   echo "=========================================================================================="
 }
 
-if [[ -f state.json ]] && jq -e '.releaseName' state.json > /dev/null; then
-  export PREVIOUS_SHA=$(jq -r '.sha' state.json)
-  export RELEASE_NAME=$(jq -r '.releaseName' state.json)  
-  echo "Using existing RELEASE_NAME from state.json: ${RELEASE_NAME}" | log_with_timestamp
-else
-  export PREVIOUS_SHA=""
-  export RELEASE_NAME="{{ componentMetadata.name }}-${RANDOM}"
-  echo "Generated new RELEASE_NAME: ${RELEASE_NAME}" | log_with_timestamp
-fi
-export CURRENT_SHA=$(sha256sum values.yaml | awk '{print $1}')
+
+exit 0
+
 
 {
-
-  export KUBECONFIG={{ componentMetadata.kubeConfigPath }}
   export NAMESPACE={{ componentMetadata.envName }}
   export BASE_VERSION={{ baseConfig.version }}
+  export IMAGE_TAG={{ baseConfig.version }}{{ flavourConfig.imageTag }}
   echo "PREVIOUS_SHA:${PREVIOUS_SHA}"
   echo "CURRENT_SHA:${CURRENT_SHA}"
   if [[ "${CURRENT_SHA}" == "${PREVIOUS_SHA}" ]]; then
     echo "No changes to apply"
   else
-    helm repo add bitnami ${HELM_REPO}
-    helm repo update
-    helm upgrade --install ${RELEASE_NAME} bitnami/${HELM_CHART_NAME} --version ${HELM_CHART_VERSION} -n ${NAMESPACE} --values values.yaml --wait
+    helm upgrade --install --repo ${HELM_REPO} ${RELEASE_NAME} ${HELM_CHART_NAME} --version ${HELM_CHART_VERSION} -n ${NAMESPACE} --values values.yaml --set image.tag=${IMAGE_TAG} --wait
     if [[ $? -ne 0 ]]; then
       echo "Mysql deployment failed. Please find pod description and logs below." 1>&2
 

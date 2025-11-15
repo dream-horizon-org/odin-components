@@ -1,14 +1,15 @@
 image:
   registry: {{ flavourConfig.imageRegistry }}
   repository: {{ flavourConfig.imageRepository }}
-  tag: {{ flavourConfig.imageTag }}
 
 auth:
-  username: {{ flavourConfig.username }}
-  password: {{ flavourConfig.password }}
+  username: {{ baseConfig.username }}
+  password: {{ baseConfig.password }}
 
 global:
   storageClass: {{ flavourConfig.storageClass }}
+  imagePullSecrets:
+    - "{{ componentMetadata.cloudProviderDetails.account.services | selectattr('category', 'eq', 'KUBERNETES') | map(attribute='data') | map(attribute='pullSecrets') | list | first }}"  
 
 {% if flavourConfig.reader.replicaCount == 0 %}
 architecture: standalone
@@ -16,7 +17,16 @@ architecture: standalone
 architecture: replication
 {% endif %}
 
-{% set serviceAnnotations = componentMetadata.cloudProviderDetails.account.services | selectattr('category', 'eq', 'KUBERNETES') | map(attribute='data') | map(attribute='serviceAnnotations') | list | first %}
+{% set accountServiceAnnotations = componentMetadata.cloudProviderDetails.account.services | selectattr('category', 'eq', 'KUBERNETES') | map(attribute='data') | map(attribute='serviceAnnotations') | list | first | default({}) %}
+{% set writerFlavourAnnotations = flavourConfig.writer.serviceAnnotations | default({}) %}
+{% set readerFlavourAnnotations = flavourConfig.reader.serviceAnnotations | default({}) %}
+{%- set ns = namespace(writerServiceAnnotations={}, readerServiceAnnotations={}) %}
+{%- set _ = ns.writerServiceAnnotations.update(accountServiceAnnotations) %}
+{%- set _ = ns.readerServiceAnnotations.update(accountServiceAnnotations) %}
+{%- set _ = ns.writerServiceAnnotations.update(writerFlavourAnnotations) %}
+{%- set _ = ns.readerServiceAnnotations.update(readerFlavourAnnotations) %}
+{%- set writerServiceAnnotations = ns.writerServiceAnnotations %}
+{%- set readerServiceAnnotations = ns.readerServiceAnnotations %}
 
 primary:
   resources:
@@ -50,20 +60,19 @@ primary:
     {{ key }}: {{ value }}
     {% endfor %}
   {% endif %}
-  {% if flavourConfig.writer.persistence %}
+  {% if flavourConfig.writer.persistence.size %}
   persistence:
     enabled: true
     size: {{ flavourConfig.writer.persistence.size }}
-    storageClass: {{ flavourConfig.storageClass }}
   {% endif %}
 
-  {% if serviceAnnotations %}
+  {%- if writerServiceAnnotations %}
   service:
     annotations:
-      {% for key,value in serviceAnnotations.items() %}
+  {%- for key,value in writerServiceAnnotations.items() %}
       {{ key }}: "{{ value }}"
-      {% endfor %}
-  {% endif %}
+  {%- endfor %}
+  {%- endif %}
 
 
   configuration: |-
@@ -124,13 +133,13 @@ secondary:
       {% endfor %}
     {% endif %}
 
-  {% if serviceAnnotations %}
+  {%- if readerServiceAnnotations %}
   service:
     annotations:
-      {% for key,value in serviceAnnotations.items() %}
+  {%- for key,value in readerServiceAnnotations.items() %}
       {{ key }}: "{{ value }}"
-      {% endfor %}
-  {% endif %}
+  {%- endfor %}
+  {%- endif %}
 
   replicaCount: {{ flavourConfig.reader.replicaCount }}
   {% if flavourConfig.reader.nodeSelector %}
@@ -139,10 +148,11 @@ secondary:
     {{ key }}: {{ value }}
     {% endfor %}
   {% endif %}
+  {% if flavourConfig.reader.persistence.size %}
   persistence:
     enabled: true
     size: {{ flavourConfig.reader.persistence.size }}
-    storageClass: {{ flavourConfig.storageClass }}    
+  {% endif %}
 
 initdbScripts:
   init.sh: |

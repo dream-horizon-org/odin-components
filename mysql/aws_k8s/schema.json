@@ -1,15 +1,7 @@
 {
   "type": "object",
   "title": "Container provisioning configuration",
-  "properties": {
-    "username": {
-      "description": "MySQL database username for authentication and connection. Used by applications to connect and perform database operations. Changing this requires updating all client connections and service accounts. **Required:** Must match MySQL user privileges. **Production:** Use dedicated service accounts with least-privilege access.",
-      "type": "string"
-    },
-    "password": {
-      "description": "MySQL database password for authentication and access control. Secures database access and prevents unauthorized connections. Store securely in secrets management systems (e.g., Vault, AWS Secrets Manager). **Required:** Strong passwords recommended (16+ chars, mixed case, special chars). **Production:** Rotate regularly and use secrets management.",
-      "type": "string"
-    },    
+  "properties": {    
     "imageRegistry": {
       "description": "Container registry URL for MySQL Docker images. Specifies where to pull MySQL container images from (e.g., docker.io, gcr.io, ECR). Use private registries for air-gapped environments, compliance requirements, or to avoid rate limits. **Required:** Must be accessible from cluster. **Production:** Use private registry with vulnerability scanning and image signing.",
       "type": "string"
@@ -121,6 +113,13 @@
             }
           },
           "required": ["size"]
+        },
+        "serviceAnnotations": {
+          "description": "Kubernetes annotations to apply to the MySQL writer service. Adds custom metadata for service discovery, load balancers, or cloud provider integrations (e.g., AWS NLB annotations, service mesh configs). Annotations enable features like internal load balancers, connection draining, or custom DNS entries. **Default: `{}`** (no annotations). **Production:** Use for cloud-specific LB configurations, monitoring integrations, or service mesh sidecar injection policies.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -141,6 +140,9 @@
         },
         "persistence": {
           "$ref": "#/properties/writer/properties/persistence"
+        },
+        "serviceAnnotations": {
+          "$ref": "#/properties/writer/properties/serviceAnnotations"
         },
         "replicaCount": {
           "description": "Number of MySQL reader replicas for read scaling and high availability. Increase for production workloads requiring read scalability or HA. Each replica adds storage and compute costs. **Default: `0`** (standalone setup for dev/testing). **Production:** 2+ replicas recommended for HA across availability zones.",

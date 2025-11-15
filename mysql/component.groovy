@@ -102,7 +102,7 @@ Odin.component {
     }
 
     flavour {
-        name "aws_container"
+        name "aws_k8s"
         deploy {
             String lastState = getLastState()
             if (lastState != null && !lastState.isEmpty()) {
@@ -137,6 +137,5 @@ Odin.component {
             run "bash undeploy.sh"
             out "cat state.json"
         }
-    }   
-
+    }
 }
