@@ -10,8 +10,8 @@
       "description": "Container image repository path for MySQL. Defines the specific MySQL image to deploy (e.g., bitnami/mysql). Change to use custom images with specific configurations or patches. **Required:** Must exist in specified registry. **Production:** Use verified, security-scanned images from trusted sources.",
       "type": "string"
     },
-    "imageTag": {
-      "description": "MySQL Docker image version tag. Controls the MySQL version deployed (e.g., 8.0.35, latest). Changing this triggers rolling updates and may require data migrations. Pin to specific versions for production stability. **Required:** Must be compatible with existing data. **Production:** Use specific version tags (avoid 'latest'), test upgrades in non-prod first.",
+    "tagSuffix": {
+      "description": "MySQL Docker image version tag suffix appended to the base version. For example, if the full docker image tag is '8.0.23' and the base version '8.0' is defined in the base configuration, then this value should be '.23'. The suffix is concatenated with the base version to form the complete image tag. Changing this triggers rolling updates and may require data migrations. **Required:** Must be compatible with existing data. **Production:** Use specific version suffixes (avoid 'latest'), test upgrades in non-prod first.",
       "type": "string"
     },    
     "storageClass": {

@@ -32,7 +32,7 @@ export CURRENT_SHA=$(sha256sum values.yaml | awk '{print $1}')
 {
   export NAMESPACE={{ componentMetadata.envName }}
   export BASE_VERSION={{ baseConfig.version }}
-  export IMAGE_TAG={{ baseConfig.version }}{{ flavourConfig.imageTag }}
+  export IMAGE_TAG={{ baseConfig.version }}{{ flavourConfig.tagSuffix }}
   echo "PREVIOUS_SHA:${PREVIOUS_SHA}"
   echo "CURRENT_SHA:${CURRENT_SHA}"
   if [[ "${CURRENT_SHA}" == "${PREVIOUS_SHA}" ]]; then
