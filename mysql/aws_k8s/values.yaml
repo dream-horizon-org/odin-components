@@ -1,6 +1,6 @@
 image:
-  registry: {{ flavourConfig.imageRegistry }}
-  repository: {{ flavourConfig.imageRepository }}
+  registry: {{ flavourConfig.metrics.image.registry }}
+  repository: {{ flavourConfig.metrics.image.repository }}
 
 auth:
   username: {{ baseConfig.username }}
