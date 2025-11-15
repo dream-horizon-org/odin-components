@@ -290,14 +290,17 @@ public class RedisClient {
     elastiCacheClient.modifyReplicationGroup(builder -> builder
         .replicationGroupId(replicationGroupId)
         .cacheNodeType(newCacheNodeType)
-        .applyImmediately(true) // Set to true for immediate update, false to apply during maintenance window
+        .applyImmediately(true)
         .build());
   }
 
   @SneakyThrows
   public void increaseReplicaCount(String replicationGroupId, int newReplicaCount) {
     elastiCacheClient.increaseReplicaCount(IncreaseReplicaCountRequest.builder()
-        .replicationGroupId(replicationGroupId)
+        .replicationGroupId(replicationGroupId.toLowerCase())// Note: AWS stores replication group IDs in lowercase
+                                                             // internally. While most ElastiCache APIs automatically
+                                                             // convert IDs to lowercase, increaseReplicaCount does not,
+                                                             // so explicit conversion is required here.
         .newReplicaCount(newReplicaCount)
         .applyImmediately(true)
         .build());
