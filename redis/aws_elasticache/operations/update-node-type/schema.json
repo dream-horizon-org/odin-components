@@ -3,7 +3,7 @@
     "title": "Update node type",
     "properties": {
       "cacheNodeType": {
-        "description": "instance type to move to",
+        "description": "AWS EC2 instance type determining compute, memory, and network capacity for each Redis node",
         "type": "string"
       }
     },
