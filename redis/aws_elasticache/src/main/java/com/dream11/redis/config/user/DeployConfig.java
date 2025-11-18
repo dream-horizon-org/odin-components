@@ -23,7 +23,7 @@ import lombok.SneakyThrows;
 @Data
 public class DeployConfig implements Config {
   @NotNull
-  private String redisVersion;
+  private String version;
 
   @Size(max = 255)
   private String replicationGroupDescription = "ElastiCache Redis replication group";
