@@ -108,11 +108,11 @@ Maximum resource limits for MySQL writer (primary) containers. Hard caps on CPU,
 
 **Properties**
 
-| Property           | Type   | Required | Description |
-|--------------------|--------|----------|-------------|
-| `cpu`              | string | **Yes**  |             |
-| `ephemeralStorage` | string | **Yes**  |             |
-| `memory`           | string | **Yes**  |             |
+| Property           | Type   | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                        |
+|--------------------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `cpu`              | string | **Yes**  | Maximum CPU limit for MySQL writer containers. Hard cap on CPU cores (e.g., '2', '1000m'). Prevents CPU exhaustion and ensures fair resource sharing. Exceeding this limit causes throttling. Set based on peak query load and concurrent connections. **Required:** Must be >= requests.cpu. **Production:** Size for peak workload with 20-30% buffer above requests.                                            |
+| `ephemeralStorage` | string | **Yes**  | Maximum ephemeral storage limit for MySQL writer containers. Hard cap on temporary disk space (e.g., '20Gi', '50Gi'). Used for temporary tables, sort operations, and query caches. Insufficient storage causes query failures; over-provisioning wastes resources. **Required:** Must be >= requests.ephemeralStorage. **Production:** Size based on largest expected temporary table operations plus 30% buffer. |
+| `memory`           | string | **Yes**  | Maximum memory limit for MySQL writer containers. Hard cap on RAM (e.g., '4Gi', '8192Mi'). Prevents OOM kills and memory exhaustion. Exceeding this limit triggers container termination. Size based on buffer pool, connection overhead, and peak query memory usage. **Required:** Must be >= requests.memory. **Production:** Set 20-30% above requests to handle memory spikes from complex queries.           |
 
 ###### requests
 
@@ -120,11 +120,11 @@ Guaranteed resource requests for MySQL writer (primary) containers. Reserves min
 
 **Properties**
 
-| Property           | Type   | Required | Description |
-|--------------------|--------|----------|-------------|
-| `cpu`              | string | **Yes**  |             |
-| `ephemeralStorage` | string | **Yes**  |             |
-| `memory`           | string | **Yes**  |             |
+| Property           | Type   | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|--------------------|--------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `cpu`              | string | **Yes**  | Guaranteed CPU request for MySQL writer containers. Minimum CPU cores reserved (e.g., '1', '500m'). Ensures baseline performance and pod scheduling. Used by Kubernetes for placement and eviction decisions. Under-requesting causes throttling; over-requesting reduces cluster capacity. **Required:** Must be <= limits.cpu. **Production:** Set based on average CPU usage during normal operations, typically 60-70% of limits.                                   |
+| `ephemeralStorage` | string | **Yes**  | Guaranteed ephemeral storage request for MySQL writer containers. Minimum temporary disk space reserved (e.g., '10Gi', '20Gi'). Ensures availability for temporary tables and sort operations. Used by Kubernetes for scheduling decisions. Under-requesting causes query failures; over-requesting reduces cluster efficiency. **Required:** Must be <= limits.ephemeralStorage. **Production:** Set based on typical temporary table sizes, usually 50-70% of limits. |
+| `memory`           | string | **Yes**  | Guaranteed memory request for MySQL writer containers. Minimum RAM reserved (e.g., '2Gi', '4096Mi'). Ensures baseline memory availability and prevents eviction. Used by Kubernetes scheduler for pod placement. Under-requesting causes OOM risks; over-requesting wastes resources. **Required:** Must be <= limits.memory. **Production:** Set based on buffer pool size plus connection overhead, typically 70-80% of limits.                                       |
 
 ##### serviceAnnotations
 
@@ -187,11 +187,11 @@ Maximum resource limits for MySQL writer (primary) containers. Hard caps on CPU,
 
 **Properties**
 
-| Property           | Type   | Required | Description |
-|--------------------|--------|----------|-------------|
-| `cpu`              | string | **Yes**  |             |
-| `ephemeralStorage` | string | **Yes**  |             |
-| `memory`           | string | **Yes**  |             |
+| Property           | Type   | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                        |
+|--------------------|--------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `cpu`              | string | **Yes**  | Maximum CPU limit for MySQL writer containers. Hard cap on CPU cores (e.g., '2', '1000m'). Prevents CPU exhaustion and ensures fair resource sharing. Exceeding this limit causes throttling. Set based on peak query load and concurrent connections. **Required:** Must be >= requests.cpu. **Production:** Size for peak workload with 20-30% buffer above requests.                                            |
+| `ephemeralStorage` | string | **Yes**  | Maximum ephemeral storage limit for MySQL writer containers. Hard cap on temporary disk space (e.g., '20Gi', '50Gi'). Used for temporary tables, sort operations, and query caches. Insufficient storage causes query failures; over-provisioning wastes resources. **Required:** Must be >= requests.ephemeralStorage. **Production:** Size based on largest expected temporary table operations plus 30% buffer. |
+| `memory`           | string | **Yes**  | Maximum memory limit for MySQL writer containers. Hard cap on RAM (e.g., '4Gi', '8192Mi'). Prevents OOM kills and memory exhaustion. Exceeding this limit triggers container termination. Size based on buffer pool, connection overhead, and peak query memory usage. **Required:** Must be >= requests.memory. **Production:** Set 20-30% above requests to handle memory spikes from complex queries.           |
 
 ###### requests
 
@@ -199,11 +199,11 @@ Guaranteed resource requests for MySQL writer (primary) containers. Reserves min
 
 **Properties**
 
-| Property           | Type   | Required | Description |
-|--------------------|--------|----------|-------------|
-| `cpu`              | string | **Yes**  |             |
-| `ephemeralStorage` | string | **Yes**  |             |
-| `memory`           | string | **Yes**  |             |
+| Property           | Type   | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|--------------------|--------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `cpu`              | string | **Yes**  | Guaranteed CPU request for MySQL writer containers. Minimum CPU cores reserved (e.g., '1', '500m'). Ensures baseline performance and pod scheduling. Used by Kubernetes for placement and eviction decisions. Under-requesting causes throttling; over-requesting reduces cluster capacity. **Required:** Must be <= limits.cpu. **Production:** Set based on average CPU usage during normal operations, typically 60-70% of limits.                                   |
+| `ephemeralStorage` | string | **Yes**  | Guaranteed ephemeral storage request for MySQL writer containers. Minimum temporary disk space reserved (e.g., '10Gi', '20Gi'). Ensures availability for temporary tables and sort operations. Used by Kubernetes for scheduling decisions. Under-requesting causes query failures; over-requesting reduces cluster efficiency. **Required:** Must be <= limits.ephemeralStorage. **Production:** Set based on typical temporary table sizes, usually 50-70% of limits. |
+| `memory`           | string | **Yes**  | Guaranteed memory request for MySQL writer containers. Minimum RAM reserved (e.g., '2Gi', '4096Mi'). Ensures baseline memory availability and prevents eviction. Used by Kubernetes scheduler for pod placement. Under-requesting causes OOM risks; over-requesting wastes resources. **Required:** Must be <= limits.memory. **Production:** Set based on buffer pool size plus connection overhead, typically 70-80% of limits.                                       |
 
 ##### serviceAnnotations
 

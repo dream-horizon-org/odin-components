@@ -9,17 +9,17 @@
     "resources": {
       "limits": {
         "cpu": "200m",
-        "ephemeralStorage": "2Gi",
+        "ephemeralStorage": "500Mi",
         "memory": "512Mi"
       },
       "requests": {
         "cpu": "100m",
-        "ephemeralStorage": "1Gi",
+        "ephemeralStorage": "500Mi",
         "memory": "256Mi"
       }
     },
     "persistence": {
-      "size": "10Gi"
+      "size": "2Gi"
     },
     "replicaCount": 1
   },
@@ -27,17 +27,17 @@
     "resources": {
       "limits": {
         "cpu": "200m",
-        "ephemeralStorage": "2Gi",
+        "ephemeralStorage": "500Mi",
         "memory": "512Mi"
       },
       "requests": {
         "cpu": "100m",
-        "ephemeralStorage": "1Gi",
+        "ephemeralStorage": "500Mi",
         "memory": "256Mi"
       }
     },
     "persistence": {
-      "size": "10Gi"
+      "size": "2Gi"
     }
   },
   "metrics": {
