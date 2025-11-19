@@ -93,6 +93,22 @@ public class DeployConfig implements Config {
     return true;
   }
 
+  @AssertTrue(message = "automaticFailoverEnabled must be true when clusterModeEnabled is true")
+  boolean isAutomaticFailoverEnabledWhenClusterModeEnabled() {
+    if (clusterModeEnabled != null && clusterModeEnabled) {
+      return automaticFailoverEnabled != null && automaticFailoverEnabled;
+    }
+    return true;
+  }
+
+  @AssertTrue(message = "automaticFailoverEnabled must be true when multiAzEnabled is true")
+  boolean isAutomaticFailoverEnabledWhenMultiAzEnabled() {
+    if (multiAzEnabled != null && multiAzEnabled) {
+      return automaticFailoverEnabled != null && automaticFailoverEnabled;
+    }
+    return true;
+  }
+
   @Override
   public void validate() {
     Config.super.validate();
