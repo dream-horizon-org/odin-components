@@ -1,6 +1,6 @@
-## Container Flavor
+## local_k8s Flavor
 
-Deploy your MySQL in container
+Deploy your MySQL in local container
 
 ### Container provisioning configuration
 
