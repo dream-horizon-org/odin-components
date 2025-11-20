@@ -20,7 +20,7 @@ function get_endpoints() {
 
 WRITER_ENDPOINT=$(get_endpoints primary)
 
-if [[ {{ readerCount }} -eq 0 ]]; then
+if [[ {{ flavourConfig.reader.replicaCount }} -eq 0 ]]; then
   READER_ENDPOINT=${WRITER_ENDPOINT}
 else
   READER_ENDPOINT=$(get_endpoints secondary)
