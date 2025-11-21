@@ -7,8 +7,8 @@ source ./constants
 setup_error_handling
 
 update_state() {
-  jq -n --arg name "${RELEASE_NAME}" --arg sha "${CURRENT_SHA}" \
-    '{releaseName: $name, sha: $sha}' > state.json
+  jq -n --arg name "${RELEASE_NAME}" \
+    '{releaseName: $name}' > state.json
 }
 
 trap 'update_state' EXIT
