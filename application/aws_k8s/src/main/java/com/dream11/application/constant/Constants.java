@@ -18,7 +18,7 @@ public class Constants {
   public final String NETWORK = "NETWORK";
   public final Integer UUID_LENGTH = 8;
   public final String BASE_DIR = "/app";
-  public final String DEPLOYMENT_TYPE = "aws_container";
+  public final String DEPLOYMENT_TYPE = "aws_k8s";
   public final UnaryOperator<String> APPLICATION_DIRECTORY =
       artifactName -> String.format("%s/%s", BASE_DIR, artifactName);
   public final String PACKER_FILE = "image.pkr.hcl";
@@ -34,7 +34,7 @@ public class Constants {
   public final Map<String, String> COMPONENT_TAGS =
       Map.of(
           "component.application.flavour",
-          "aws_container",
+          "aws_k8s",
           "component.application.version",
           ApplicationUtil.getProjectVersion());
   public final String PROJECT_PROPERTIES = "project.properties";
