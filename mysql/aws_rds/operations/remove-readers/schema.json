@@ -15,7 +15,7 @@
             "pattern": "^(db\\.(?:[trm][0-9][a-z]?\\.(?:micro|small|medium|large|xlarge|\\d+x?large))|db\\.serverless)$"
           },
           "instanceCount": {
-            "type": "integer",
+            "type": "number",
             "description": "Number of reader instances of this type to remove from the cluster. Reduce count gradually to right-size capacity without over-provisioning. `Impact:` Removing too many readers can overload remaining instances, causing increased latency and potential read failures. `Production:` Remove readers one at a time while monitoring CPU and connection metrics. Ensure at least one reader remains per AZ for availability.",
             "minimum": 1
           }

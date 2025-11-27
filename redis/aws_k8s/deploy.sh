@@ -74,15 +74,15 @@ fi
   # Helper: Apply primary discovery annotations from componentMetadata
   # Workaround for Opstree operator v0.22.2 not supporting kubernetesConfig.service.annotations
   apply_service_annotations() {
-    local helm_release=$1
+    local _helm_release=$1
     local service_name=$2
-    
+
     echo "Applying primary discovery annotations to ${service_name}..." | log_with_timestamp
-    
+
     # Extract only primary discovery annotations from componentMetadata
-    PRIMARY_ANNOTATIONS=$(echo "${COMPONENT_METADATA}" | \
+    PRIMARY_ANNOTATIONS=$(echo "${ODIN_COMPONENT_METADATA}" | \
       jq -r '.cloudProviderDetails.linked_accounts[] | select(.provider == "Odin") | .services[] | select(.category == "DISCOVERY") | .data.discoveryAnnotations.primary // {} | to_entries | .[] | "\(.key)=\(.value)"' 2>/dev/null)
-    
+
     if [[ -n "${PRIMARY_ANNOTATIONS}" ]]; then
       echo "${PRIMARY_ANNOTATIONS}" | while IFS= read -r annotation; do
         if [[ -n "${annotation}" ]]; then
@@ -159,7 +159,7 @@ fi
 
       # Standalone: expect exactly 1 Redis pod
       wait_for_pods "${RELEASE_NAME}-${DEPLOYMENT_MODE}" 1 "Redis Standalone"
-      
+
       # Apply service annotations
       apply_service_annotations "${HELM_RELEASE}" "${RELEASE_NAME}-${DEPLOYMENT_MODE}"
       ;;
@@ -200,7 +200,7 @@ fi
 
       # Sentinel pods themselves
       wait_for_pods "${RELEASE_NAME}-${DEPLOYMENT_MODE}-sentinel" {{ flavourConfig.sentinel.sentinelSize }} "Redis Sentinel"
-      
+
       # Apply primary discovery annotations to sentinel service only
       apply_service_annotations "${SENTINEL_RELEASE}" "${RELEASE_NAME}-${DEPLOYMENT_MODE}-sentinel"
       ;;
@@ -225,7 +225,7 @@ fi
       # - followers: clusterSize * replicasPerMaster
       wait_for_pods "${RELEASE_NAME}-${DEPLOYMENT_MODE}-leader" {{ flavourConfig.cluster.clusterSize }} "Redis Cluster Leaders"
       wait_for_pods "${RELEASE_NAME}-${DEPLOYMENT_MODE}-follower" {{ flavourConfig.cluster.clusterSize * flavourConfig.cluster.replicasPerMaster }} "Redis Cluster Followers"
-      
+
       # Apply primary discovery annotations to cluster master service only
       apply_service_annotations "${HELM_RELEASE}" "${RELEASE_NAME}-${DEPLOYMENT_MODE}-master"
       ;;
