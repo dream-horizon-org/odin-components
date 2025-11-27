@@ -6,8 +6,8 @@ Updates replica count
 
 #### Properties
 
-| Property               | Type    | Required | Description                            |
-|------------------------|---------|----------|----------------------------------------|
-| `replicasPerNodeGroup` | integer | **Yes**  | No of replicas per shard to be updated |
+| Property               | Type   | Required | Description                            |
+|------------------------|--------|----------|----------------------------------------|
+| `replicasPerNodeGroup` | number | **Yes**  | No of replicas per shard to be updated |
 
 

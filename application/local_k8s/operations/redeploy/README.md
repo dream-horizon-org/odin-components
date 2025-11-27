@@ -14,7 +14,7 @@ Redeploy application
 | `localArtifact` | [object](#localartifact) | No       | Local artifact configuration                       |
 | `ports`         | [object](#ports)[]       | No       | The ports to expose on the container               |
 | `probes`        | [object](#probes)        | No       | The probes configuration for the container         |
-| `replicas`      | integer                  | No       | Number of replicas to deploy                       |
+| `replicas`      | number                   | No       | Number of replicas to deploy                       |
 | `resources`     | [object](#resources)     | No       | The resources to allocate for the container        |
 
 #### artifact
@@ -132,10 +132,10 @@ Local artifact configuration
 
 ##### Properties
 
-| Property     | Type    | Required | Description                  |
-|--------------|---------|----------|------------------------------|
-| `port`       | integer | **Yes**  | The port number to expose    |
-| `targetPort` | integer | **Yes**  | Target port on the container |
+| Property     | Type   | Required | Description                  |
+|--------------|--------|----------|------------------------------|
+| `port`       | number | **Yes**  | The port number to expose    |
+| `targetPort` | number | **Yes**  | Target port on the container |
 
 #### probes
 
@@ -158,10 +158,10 @@ The liveness probe configuration
 | Property              | Type    | Required | Description                                                              |
 |-----------------------|---------|----------|--------------------------------------------------------------------------|
 | `enabled`             | boolean | **Yes**  | Whether liveness probe is enabled                                        |
-| `failureThreshold`    | integer | **Yes**  | The number of failed probes before the container is considered unhealthy |
-| `initialDelaySeconds` | integer | **Yes**  | The initial delay before starting the probe                              |
-| `intervalSeconds`     | integer | **Yes**  | The interval between probes                                              |
-| `timeoutSeconds`      | integer | **Yes**  | The timeout for the probe                                                |
+| `failureThreshold`    | number  | **Yes**  | The number of failed probes before the container is considered unhealthy |
+| `initialDelaySeconds` | number  | **Yes**  | The initial delay before starting the probe                              |
+| `intervalSeconds`     | number  | **Yes**  | The interval between probes                                              |
+| `timeoutSeconds`      | number  | **Yes**  | The timeout for the probe                                                |
 | `type`                | string  | **Yes**  | The type of probe to use Possible values are: `HTTP_GET`, `TCP`, `GRPC`. |
 
 ##### readiness
@@ -173,11 +173,11 @@ The readiness probe configuration
 | Property              | Type    | Required | Description                                                                |
 |-----------------------|---------|----------|----------------------------------------------------------------------------|
 | `enabled`             | boolean | **Yes**  | Whether readiness probe is enabled                                         |
-| `failureThreshold`    | integer | **Yes**  | The number of failed probes before the container is considered unhealthy   |
-| `initialDelaySeconds` | integer | **Yes**  | The initial delay before starting the probe                                |
-| `intervalSeconds`     | integer | **Yes**  | The interval between probes                                                |
-| `successThreshold`    | integer | **Yes**  | The number of successful probes before the container is considered healthy |
-| `timeoutSeconds`      | integer | **Yes**  | The timeout for the probe                                                  |
+| `failureThreshold`    | number  | **Yes**  | The number of failed probes before the container is considered unhealthy   |
+| `initialDelaySeconds` | number  | **Yes**  | The initial delay before starting the probe                                |
+| `intervalSeconds`     | number  | **Yes**  | The interval between probes                                                |
+| `successThreshold`    | number  | **Yes**  | The number of successful probes before the container is considered healthy |
+| `timeoutSeconds`      | number  | **Yes**  | The timeout for the probe                                                  |
 | `type`                | string  | **Yes**  | The type of probe to use Possible values are: `HTTP_GET`, `TCP`, `GRPC`.   |
 
 ##### startup
@@ -189,10 +189,10 @@ The startup probe configuration
 | Property              | Type    | Required | Description                                                              |
 |-----------------------|---------|----------|--------------------------------------------------------------------------|
 | `enabled`             | boolean | **Yes**  | Whether startup probe is enabled                                         |
-| `failureThreshold`    | integer | **Yes**  | The number of failed probes before the container is considered unhealthy |
-| `initialDelaySeconds` | integer | **Yes**  | The initial delay before starting the probe                              |
-| `intervalSeconds`     | integer | **Yes**  | The interval between probes                                              |
-| `timeoutSeconds`      | integer | **Yes**  | The timeout for the probe                                                |
+| `failureThreshold`    | number  | **Yes**  | The number of failed probes before the container is considered unhealthy |
+| `initialDelaySeconds` | number  | **Yes**  | The initial delay before starting the probe                              |
+| `intervalSeconds`     | number  | **Yes**  | The interval between probes                                              |
+| `timeoutSeconds`      | number  | **Yes**  | The timeout for the probe                                                |
 | `type`                | string  | **Yes**  | The type of probe to use Possible values are: `HTTP_GET`, `TCP`, `GRPC`. |
 
 #### resources

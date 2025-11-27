@@ -6,10 +6,10 @@ Restart the application servers in batches
 
 #### Properties
 
-| Property                   | Type    | Required | Description                                                             |
-|----------------------------|---------|----------|-------------------------------------------------------------------------|
-| `batchSizePercentage`      | integer | **Yes**  | Percentage of instances where this operation will run in parallel       |
-| `errorTolerancePercentage` | integer | **Yes**  | Allowed percentage of instances that fail during this operation         |
-| `mode`                     | string  | **Yes**  | The mode of the operation Possible values are: `FORCEKILL`, `GRACEFUL`. |
+| Property                   | Type   | Required | Description                                                             |
+|----------------------------|--------|----------|-------------------------------------------------------------------------|
+| `batchSizePercentage`      | number | **Yes**  | Percentage of instances where this operation will run in parallel       |
+| `errorTolerancePercentage` | number | **Yes**  | Allowed percentage of instances that fail during this operation         |
+| `mode`                     | string | **Yes**  | The mode of the operation Possible values are: `FORCEKILL`, `GRACEFUL`. |
 
 

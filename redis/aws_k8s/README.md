@@ -32,10 +32,10 @@ Redis Cluster mode configuration. Only applicable when deploymentMode is 'cluste
 
 #### Properties
 
-| Property            | Type    | Required | Description                                                                                                                                                                                                                |
-|---------------------|---------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `clusterSize`       | integer | **Yes**  | Number of master nodes in cluster. Each master handles a portion of the 16,384 hash slots. Minimum 3 required for cluster mode. **Default: `3`**. **Production:** Start with 3-5 masters; scale based on throughput needs. |
-| `replicasPerMaster` | integer | **Yes**  | Number of replica nodes per master for high availability and read scaling. Total pods = clusterSize × (1 + replicasPerMaster). **Default: `1`**. **Production:** Use 1-2 replicas per master.                              |
+| Property            | Type   | Required | Description                                                                                                                                                                                                                |
+|---------------------|--------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `clusterSize`       | number | **Yes**  | Number of master nodes in cluster. Each master handles a portion of the 16,384 hash slots. Minimum 3 required for cluster mode. **Default: `3`**. **Production:** Start with 3-5 masters; scale based on throughput needs. |
+| `replicasPerMaster` | number | **Yes**  | Number of replica nodes per master for high availability and read scaling. Total pods = clusterSize × (1 + replicasPerMaster). **Default: `1`**. **Production:** Use 1-2 replicas per master.                              |
 
 ### metrics
 
@@ -95,7 +95,7 @@ PodDisruptionBudget to limit voluntary disruptions during node maintenance.
 | Property       | Type    | Required | Description                                                                                                                                               |
 |----------------|---------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `enabled`      | boolean | No       | Enable PodDisruptionBudget. **Default: `true`**. **Production:** Always enable.                                                                           |
-| `minAvailable` | integer | No       | Minimum pods that must remain available during disruptions. **Default: `1`**. **Production:** Set based on deployment size - for 3 nodes, minAvailable=2. |
+| `minAvailable` | number  | No       | Minimum pods that must remain available during disruptions. **Default: `1`**. **Production:** Set based on deployment size - for 3 nodes, minAvailable=2. |
 
 ### resources
 
@@ -138,9 +138,9 @@ Pod security context for running Redis containers with restricted privileges.
 
 | Property       | Type    | Required | Description                                                                                |
 |----------------|---------|----------|--------------------------------------------------------------------------------------------|
-| `fsGroup`      | integer | No       | GID for volume ownership. **Default: `1000`** (redis group).                               |
+| `fsGroup`      | number  | No       | GID for volume ownership. **Default: `1000`** (redis group).                               |
 | `runAsNonRoot` | boolean | No       | Run Redis as non-root user. **Default: `true`**. **Production:** Always true for security. |
-| `runAsUser`    | integer | No       | UID to run Redis process. **Default: `1000`** (redis user in opstree image).               |
+| `runAsUser`    | number  | No       | UID to run Redis process. **Default: `1000`** (redis user in opstree image).               |
 
 ### sentinel
 
@@ -148,14 +148,14 @@ Redis Sentinel mode configuration. Only applicable when deploymentMode is 'senti
 
 #### Properties
 
-| Property                | Type    | Required | Description                                                                                                                                                                                                                  |
-|-------------------------|---------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `quorum`                | integer | **Yes**  | Number of Sentinels that must agree master is down before initiating failover. Should be majority (e.g., 2 for 3 sentinels, 3 for 5 sentinels). **Default: `2`**.                                                            |
-| `replicationSize`       | integer | **Yes**  | Total size of replication group (1 master + N replicas). **Default: `3`** (1 master + 2 replicas). **Production:** Use 3 for HA.                                                                                             |
-| `sentinelSize`          | integer | **Yes**  | Number of Sentinel instances for monitoring and failover. Must be odd number >= 3 for proper quorum. **Default: `3`**. **Production:** Use 3 or 5; more than 5 rarely needed.                                                |
-| `downAfterMilliseconds` | integer | No       | Milliseconds before Sentinel marks an instance as down (SDOWN state). Lower values = faster failover but more false positives. **Default: `5000`** (5 seconds). **Production:** 5000-10000ms depending on network stability. |
-| `failoverTimeout`       | integer | No       | Failover timeout in milliseconds. If failover isn't complete in this time, Sentinel retries. **Default: `10000`** (10 seconds).                                                                                              |
-| `parallelSyncs`         | integer | No       | Number of replicas that can sync with new master in parallel during failover. Lower values reduce load on new master. **Default: `1`**. **Production:** Keep at 1 to avoid overwhelming new master.                          |
+| Property                | Type   | Required | Description                                                                                                                                                                                                                  |
+|-------------------------|--------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `quorum`                | number | **Yes**  | Number of Sentinels that must agree master is down before initiating failover. Should be majority (e.g., 2 for 3 sentinels, 3 for 5 sentinels). **Default: `2`**.                                                            |
+| `replicationSize`       | number | **Yes**  | Total size of replication group (1 master + N replicas). **Default: `3`** (1 master + 2 replicas). **Production:** Use 3 for HA.                                                                                             |
+| `sentinelSize`          | number | **Yes**  | Number of Sentinel instances for monitoring and failover. Must be odd number >= 3 for proper quorum. **Default: `3`**. **Production:** Use 3 or 5; more than 5 rarely needed.                                                |
+| `downAfterMilliseconds` | number | No       | Milliseconds before Sentinel marks an instance as down (SDOWN state). Lower values = faster failover but more false positives. **Default: `5000`** (5 seconds). **Production:** 5000-10000ms depending on network stability. |
+| `failoverTimeout`       | number | No       | Failover timeout in milliseconds. If failover isn't complete in this time, Sentinel retries. **Default: `10000`** (10 seconds).                                                                                              |
+| `parallelSyncs`         | number | No       | Number of replicas that can sync with new master in parallel during failover. Lower values reduce load on new master. **Default: `1`**. **Production:** Keep at 1 to avoid overwhelming new master.                          |
 
 ### storage
 
