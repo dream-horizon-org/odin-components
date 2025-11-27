@@ -4,7 +4,7 @@
     "properties": {
       "numNodeGroups": {
         "description": "No of shards to be added",
-        "type": "integer"
+        "type": "number"
       }
     },
     "required": [

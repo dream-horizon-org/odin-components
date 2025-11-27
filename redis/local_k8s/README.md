@@ -208,10 +208,10 @@ Redis Cluster mode configuration. Only applicable when deploymentMode is 'cluste
 
 #### Properties
 
-| Property            | Type    | Required | Description                                                                                                                                         |
-|---------------------|---------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| `clusterSize`       | integer | **Yes**  | Number of master nodes in cluster. Each master handles a portion of the 16,384 hash slots. Minimum 3 required. **Default: `3`**.                    |
-| `replicasPerMaster` | integer | **Yes**  | Number of replica nodes per master. Total pods = clusterSize × (1 + replicasPerMaster). For local clusters keep this small (0–1). **Default: `0`**. |
+| Property            | Type   | Required | Description                                                                                                                                         |
+|---------------------|--------|----------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| `clusterSize`       | number | **Yes**  | Number of master nodes in cluster. Each master handles a portion of the 16,384 hash slots. Minimum 3 required. **Default: `3`**.                    |
+| `replicasPerMaster` | number | **Yes**  | Number of replica nodes per master. Total pods = clusterSize × (1 + replicasPerMaster). For local clusters keep this small (0–1). **Default: `0`**. |
 
 ### metrics
 
@@ -271,7 +271,7 @@ PodDisruptionBudget hints for local clusters.
 | Property       | Type    | Required | Description                                                                   |
 |----------------|---------|----------|-------------------------------------------------------------------------------|
 | `enabled`      | boolean | No       | Enable PodDisruptionBudget hints. **Default: `false`** for local.             |
-| `minAvailable` | integer | No       | Minimum pods that must remain available during disruptions. **Default: `1`**. |
+| `minAvailable` | number  | No       | Minimum pods that must remain available during disruptions. **Default: `1`**. |
 
 ### resources
 
@@ -314,9 +314,9 @@ Pod security context for running Redis containers with restricted privileges.
 
 | Property       | Type    | Required | Description                                      |
 |----------------|---------|----------|--------------------------------------------------|
-| `fsGroup`      | integer | No       | GID for volume ownership. **Default: `1000`**.   |
+| `fsGroup`      | number  | No       | GID for volume ownership. **Default: `1000`**.   |
 | `runAsNonRoot` | boolean | No       | Run Redis as non-root user. **Default: `true`**. |
-| `runAsUser`    | integer | No       | UID to run Redis process. **Default: `1000`**.   |
+| `runAsUser`    | number  | No       | UID to run Redis process. **Default: `1000`**.   |
 
 ### sentinel
 
@@ -324,14 +324,14 @@ Redis Sentinel mode configuration. Only applicable when deploymentMode is 'senti
 
 #### Properties
 
-| Property                | Type    | Required | Description                                                                                                                     |
-|-------------------------|---------|----------|---------------------------------------------------------------------------------------------------------------------------------|
-| `quorum`                | integer | **Yes**  | Number of Sentinels that must agree master is down before initiating failover. **Default: `2`**.                                |
-| `replicationSize`       | integer | **Yes**  | Total size of replication group (1 master + N replicas). **Default: `2`** (1 master + 1 replica) for local.                     |
-| `sentinelSize`          | integer | **Yes**  | Number of Sentinel instances. For local clusters we default to 3 for proper quorum. **Default: `3`**. Possible values are: `3`. |
-| `downAfterMilliseconds` | integer | No       | Milliseconds before Sentinel marks an instance as down. **Default: `5000`**.                                                    |
-| `failoverTimeout`       | integer | No       | Failover timeout in milliseconds. **Default: `10000`**.                                                                         |
-| `parallelSyncs`         | integer | No       | Number of replicas that can sync with new master in parallel during failover. **Default: `1`**.                                 |
+| Property                | Type   | Required | Description                                                                                                                     |
+|-------------------------|--------|----------|---------------------------------------------------------------------------------------------------------------------------------|
+| `quorum`                | number | **Yes**  | Number of Sentinels that must agree master is down before initiating failover. **Default: `2`**.                                |
+| `replicationSize`       | number | **Yes**  | Total size of replication group (1 master + N replicas). **Default: `2`** (1 master + 1 replica) for local.                     |
+| `sentinelSize`          | number | **Yes**  | Number of Sentinel instances. For local clusters we default to 3 for proper quorum. **Default: `3`**. Possible values are: `3`. |
+| `downAfterMilliseconds` | number | No       | Milliseconds before Sentinel marks an instance as down. **Default: `5000`**.                                                    |
+| `failoverTimeout`       | number | No       | Failover timeout in milliseconds. **Default: `10000`**.                                                                         |
+| `parallelSyncs`         | number | No       | Number of replicas that can sync with new master in parallel during failover. **Default: `1`**.                                 |
 
 ### storage
 

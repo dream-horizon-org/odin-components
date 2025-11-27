@@ -14,7 +14,7 @@
       "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
     },
     "port": {
-      "type": "integer",
+      "type": "number",
       "description": "The TCP port number on which the database accepts connections. All instances in the cluster use the same port. Valid range is 1150-65535. Custom ports can provide security through obscurity but require updating application connection strings and firewall rules. **Default: 3306** (standard MySQL port for maximum compatibility). **Production:** Use default 3306 unless security policies mandate non-standard ports.",
       "minimum": 1150,
       "maximum": 65535
@@ -28,7 +28,7 @@
       "description": "The storage type for the Aurora cluster. Determines pricing model and cost structure for I/O operations. 'aurora' uses standard Aurora storage where you pay per I/O request (cost-effective for low to moderate I/O). 'aurora-iopt1' (I/O-Optimized) includes unlimited I/O operations in the price (better for I/O-intensive workloads with >$8000/month I/O costs). Cannot be changed after cluster creation. **Default: aurora** (predictable costs for most workloads). **Production:** Choose 'aurora-iopt1' only if I/O costs consistently exceed 25% of total Aurora costs."
     },
     "backupRetentionPeriod": {
-      "type": "integer",
+      "type": "number",
       "description": "The number of days to retain automated backups before automatic deletion. AWS takes daily backups during the preferred backup window and retains them for this period. Enables point-in-time recovery to any second within the retention period. Minimum 1 day, maximum 35 days. Longer retention increases backup storage costs but improves recovery options. Backtrack (if enabled) provides faster recovery than backup restoration. **Default: 7** (one week of recovery history, balancing cost and safety). **Production:** Use 7-35 days based on compliance requirements and change frequency.",
       "minimum": 1,
       "maximum": 35
@@ -119,7 +119,7 @@
       "additionalProperties": false
     },
     "backtrackWindow": {
-      "type": "integer",
+      "type": "number",
       "minimum": 0,
       "description": "The target backtrack window in seconds for in-place rewind capability. Aurora Backtrack allows rewinding the database to any point in time within this window without restoring from backup. Rewind completes in minutes (vs hours for backup restore). Uses change records stored in the cluster, incurring storage costs. Value of 0 disables backtrack (no additional costs). Maximum is 259200 seconds (72 hours). Only supported on some Aurora MySQL versions (check compatibility). Useful for quickly recovering from user errors, application bugs, or bad migrations. Cannot be used with Global Databases or cross-region replicas. **Default: 0** (disabled to minimize storage costs). **Production:** Enable with 24-72 hours for critical databases where fast recovery justifies cost."
     },
@@ -329,7 +329,7 @@
           "pattern": "^arn:(aws|aws-cn|aws-us-gov):kms:[a-z0-9-]+:\\d{12}:key\\/[0-9a-fA-F-]{36}$"
         },
         "performanceInsightsRetentionPeriod": {
-          "type": "integer",
+          "type": "number",
           "description": "The retention period for Performance Insights data in days. Determines how far back you can analyze historical performance. 7 days (free tier, included with Performance Insights, sufficient for recent troubleshooting). 731 days (2 years, additional cost ~$3.50/vCPU/month, enables long-term trend analysis and capacity planning). Data older than retention period is automatically deleted. Cannot be changed to shorter period without recreating instance. **Default: 7** (free tier). **Production:** Use 7 days for most databases; choose 731 days for critical production databases requiring long-term performance trending and capacity forecasting.",
           "enum": [
             7,
@@ -345,7 +345,7 @@
               "description": "Enables Enhanced Monitoring collection. When true, must provide interval and monitoringRoleArn. Provides significantly more detailed metrics than standard CloudWatch monitoring (which shows only database-level aggregates). Useful for troubleshooting performance issues caused by OS-level resource contention, identifying specific processes consuming resources, and detailed I/O analysis per disk. **Default: false** (disabled to reduce costs and complexity). **Production:** Enable for production databases experiencing performance issues or requiring detailed capacity planning data."
             },
             "interval": {
-              "type": "integer",
+              "type": "number",
               "description": "The monitoring data collection and publishing interval in seconds. Determines granularity of metrics. Smaller intervals provide more granular data for pinpointing transient issues but increase CloudWatch Logs costs proportionally. 60 seconds (standard, sufficient for most monitoring and alerting). 30 seconds (higher resolution trending). 15/10/5 seconds (detailed troubleshooting). 1 second (maximum granularity for real-time problem diagnosis). Cost impact: 1-second interval generates 60x more data than 60-second. **Production:** Use 60 seconds for routine monitoring; temporarily lower to 1-5 seconds during active troubleshooting.",
               "enum": [
                 1,
@@ -393,48 +393,48 @@
           "description": "Define instance-level MySQL parameters inline without pre-creating a parameter group. Platform automatically creates and manages a custom parameter group with these values. Controls instance behavior including connection management, query execution timeouts, logging, and memory allocation for temporary tables. Settings apply per instance. Useful for infrastructure-as-code where configuration is version-controlled with cluster definition. Mutually exclusive with instanceParameterGroupName. **Production:** Convenient for simple parameter customization without external parameter group management.",
           "properties": {
             "interactiveTimeout": {
-              "type": "integer",
+              "type": "number",
               "description": "Seconds the server waits for activity on an interactive connection before closing it. Interactive connections are those from mysql client with CLIENT_INTERACTIVE flag (e.g., mysql CLI). Prevents accumulation of idle admin sessions. Range: 1-31536000. **Default: 28800** (8 hours). **Production:** Keep default unless administrators need longer sessions for maintenance; lower to 3600-7200 seconds if unused admin sessions accumulate.",
               "minimum": 1,
               "maximum": 31536000
             },
             "waitTimeout": {
-              "type": "integer",
+              "type": "number",
               "description": "Seconds the server waits for activity on a non-interactive connection before closing it. Applies to application database connections. Idle connections consume resources (memory, connection slots). Lower values free up connections faster but may disconnect legitimate idle application connections (e.g., connection pools). Higher values accommodate long-running transactions but risk connection exhaustion. Range: 1-31536000. **Default: 28800** (8 hours). **Production:** Set to 300-600 seconds (5-10 minutes) for stateless applications; keep higher (3600+) for applications with long-running transactions.",
               "minimum": 1,
               "maximum": 31536000
             },
             "lockWaitTimeout": {
-              "type": "integer",
+              "type": "number",
               "description": "Seconds to wait for a metadata lock before timing out. Metadata locks protect table structure during DDL operations (ALTER TABLE, etc.). Long waits occur when DDL blocks on active queries. Very high default can cause DDL to block indefinitely, preventing deployments. Lower values fail DDL faster, allowing retry logic. Range: 1-31536000. **Default: 31536000** (1 year, effectively unlimited). **Production:** Set to 60-300 seconds to prevent DDL operations from blocking deployments indefinitely; implement retry logic for schema changes.",
               "minimum": 1,
               "maximum": 31536000
             },
             "longQueryTime": {
-              "type": "integer",
+              "type": "number",
               "description": "Seconds threshold for classifying queries as slow. Queries with execution time exceeding this are logged to slow query log (if slow_query_log=1). Essential for identifying performance issues and optimization opportunities. Set too low and logs become noisy; too high and you miss optimization targets. Range: 0-31536000. **Default: 10** (10 seconds). **Production:** Set to 1-2 seconds during performance tuning phases; increase to 5-10 seconds in stable production to capture only genuinely problematic queries.",
               "minimum": 0,
               "maximum": 31536000
             },
             "maxAllowedPacket": {
-              "type": "integer",
+              "type": "number",
               "description": "Maximum size in bytes for network packets, query strings, and intermediate results. Limits maximum size of INSERT/UPDATE statements and BLOB/TEXT data. Too small causes 'Packet too large' errors on bulk inserts or large BLOB operations. Too large increases memory usage. Must be multiple of 1024. Range: 1024-1073741824 (1KB-1GB). **Default: 4194304** (4MB, sufficient for most applications). **Production:** Keep default unless handling large BLOBs or bulk inserts; increase to 16-64MB for ETL workloads; avoid exceeding 256MB unless essential.",
               "minimum": 1024,
               "maximum": 1073741824
             },
             "slowQueryLog": {
-              "type": "integer",
+              "type": "number",
               "description": "Enables (1) or disables (0) slow query logging. When enabled, queries exceeding long_query_time are logged. Must be enabled for slow query logs to be exported to CloudWatch (via enableCloudwatchLogsExports). Essential for identifying unoptimized queries and performance bottlenecks. Minimal performance overhead (<1%). Dynamic parameter. **Default: 0** (disabled to reduce log volume in dev). **Production:** Enable (set to 1) for all production databases; export to CloudWatch for centralized analysis and alerting.",
               "enum": [0, 1]
             },
             "tmpTableSize": {
-              "type": "integer",
+              "type": "number",
               "description": "Maximum size in bytes for internal in-memory temporary tables created during query execution (GROUP BY, ORDER BY, DISTINCT, UNION). If temporary table exceeds this size, MySQL converts it from in-memory (fast) to on-disk MyISAM table (slow, causes disk I/O). Works with max_heap_table_size (effective limit is minimum of both). Increasing improves performance of complex queries but consumes more memory per connection. Range: 1024-4294967295. **Default: 16777216** (16MB). **Production:** Increase to 64-256MB for analytical workloads with complex queries; monitor memory usage to avoid OOM; keep default for OLTP workloads.",
               "minimum": 1024,
               "maximum": 4294967295
             },
             "maxHeapTableSize": {
-              "type": "integer",
+              "type": "number",
               "description": "Maximum size in bytes for user-created MEMORY tables and internal temporary tables. Works with tmp_table_size to limit in-memory temporary table size (effective limit is minimum of both). Affects performance of queries using temporary tables for sorting/grouping. Higher values improve query performance but increase per-connection memory usage. Range: 16384-4294967295. **Default: 16777216** (16MB). **Production:** Keep synchronized with tmp_table_size; increase both to 64-256MB for analytical queries; monitor total memory usage (max_heap_table_size × max_connections).",
               "minimum": 16384,
               "maximum": 4294967295
@@ -481,7 +481,7 @@
           "pattern": "^(db\\.(?:[trm][0-9][a-z]?\\.(?:micro|small|medium|large|xlarge|\\d+x?large))|db\\.serverless)$"
         },
         "promotionTier": {
-          "type": "integer",
+          "type": "number",
           "description": "Failover priority for the writer instance. Although the writer is not promoted (it's already writer), this value is used if the cluster topology changes. Lower numbers indicate higher priority (0 = highest, 15 = lowest). During writer failure, Aurora promotes the reader with the lowest tier value. Typically set writer to tier 0 or 1 to maintain tier continuity. Ties are broken arbitrarily. Range: 0-15. **Production:** Set to 0 or 1 for consistency; ensure at least one reader has equal or lower tier for automatic failover.",
           "minimum": 0,
           "maximum": 15
@@ -508,13 +508,13 @@
             "pattern": "^(db\\.(?:[trm][0-9][a-z]?\\.(?:micro|small|medium|large|xlarge|\\d+x?large))|db\\.serverless)$"
           },
           "instanceCount": {
-            "type": "integer",
+            "type": "number",
             "description": "The number of identical reader instances to create in this group. Each instance is a full read replica with complete copy of cluster data (via shared storage). More readers improve: (1) Read throughput capacity, (2) Fault tolerance (multiple failover targets), (3) Maintenance flexibility (rolling updates). Considerations: Each reader adds cost (instance hours), requires connection pool capacity, and consumes cluster resources. Minimum 1 (for HA), maximum 15 total across all groups. Cost scales linearly with count. **Production:** Use 1 reader minimum for HA; 2-4 readers for moderate read traffic; 5+ for read-heavy workloads; add readers before peak periods.",
             "minimum": 1,
             "maximum": 15
           },
           "promotionTier": {
-            "type": "integer",
+            "type": "number",
             "description": "Failover priority for instances in this group during writer failure. Lower numbers = higher priority (0 = highest, 15 = lowest). When the writer fails, Aurora promotes the reader with the lowest tier value to become the new writer. Ties are broken by: (1) Largest instance size, (2) Arbitrary selection. Use tiers to: (1) Control which readers become writer (set lowest tier on largest/best-positioned readers), (2) Reserve specific readers for read-only workloads (set highest tier). All instances in this group share the same tier. Range: 0-15. **Production:** Set tier 0-1 for primary failover candidates (large instances in primary AZ); tier 5-10 for dedicated analytical readers (avoid promoting); tier 2-4 for general readers.",
             "minimum": 0,
             "maximum": 15

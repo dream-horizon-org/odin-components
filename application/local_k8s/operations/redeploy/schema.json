@@ -175,7 +175,7 @@
       "required": []
     },
     "replicas": {
-      "type": "integer",
+      "type": "number",
       "description": "Number of replicas to deploy"
     },
     "ports": {
@@ -187,11 +187,11 @@
         "additionalProperties": false,
         "properties": {
           "port": {
-            "type": "integer",
+            "type": "number",
             "description": "The port number to expose"
           },
           "targetPort": {
-            "type": "integer",
+            "type": "number",
             "description": "Target port on the container"
           }
         },
@@ -223,23 +223,23 @@
               "description": "Whether readiness probe is enabled"
             },
             "initialDelaySeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The initial delay before starting the probe"
             },
             "intervalSeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The interval between probes"
             },
             "timeoutSeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The timeout for the probe"
             },
             "successThreshold": {
-              "type": "integer",
+              "type": "number",
               "description": "The number of successful probes before the container is considered healthy"
             },
             "failureThreshold": {
-              "type": "integer",
+              "type": "number",
               "description": "The number of failed probes before the container is considered unhealthy"
             }
           },
@@ -272,7 +272,7 @@
                         "description": "The path to use for the probe"
                       },
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       },
                       "headers": {
@@ -331,7 +331,7 @@
                         "description": "The path to use for the probe"
                       },
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       }
                     },
@@ -376,7 +376,7 @@
                     "type": "object",
                     "properties": {
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       }
                     },
@@ -427,19 +427,19 @@
               "description": "Whether liveness probe is enabled"
             },
             "initialDelaySeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The initial delay before starting the probe"
             },
             "intervalSeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The interval between probes"
             },
             "timeoutSeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The timeout for the probe"
             },
             "failureThreshold": {
-              "type": "integer",
+              "type": "number",
               "description": "The number of failed probes before the container is considered unhealthy"
             }
           },
@@ -471,7 +471,7 @@
                         "description": "The path to use for the probe"
                       },
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       },
                       "headers": {
@@ -529,7 +529,7 @@
                         "description": "The path to use for the probe"
                       },
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       }
                     },
@@ -573,7 +573,7 @@
                     "type": "object",
                     "properties": {
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       }
                     },
@@ -622,19 +622,19 @@
               "description": "Whether startup probe is enabled"
             },
             "initialDelaySeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The initial delay before starting the probe"
             },
             "intervalSeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The interval between probes"
             },
             "timeoutSeconds": {
-              "type": "integer",
+              "type": "number",
               "description": "The timeout for the probe"
             },
             "failureThreshold": {
-              "type": "integer",
+              "type": "number",
               "description": "The number of failed probes before the container is considered unhealthy"
             }
           },
@@ -666,7 +666,7 @@
                         "description": "The path to use for the probe"
                       },
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       },
                       "headers": {
@@ -724,7 +724,7 @@
                         "description": "The path to use for the probe"
                       },
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       }
                     },
@@ -768,7 +768,7 @@
                     "type": "object",
                     "properties": {
                       "port": {
-                        "type": "integer",
+                        "type": "number",
                         "description": "The port to use for the probe"
                       }
                     },

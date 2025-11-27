@@ -45,14 +45,14 @@
       "description": "Redis Cluster mode configuration. Only applicable when deploymentMode is 'cluster'. Enables horizontal scaling with data sharding.",
       "properties": {
         "clusterSize": {
-          "type": "integer",
+          "type": "number",
           "minimum": 3,
           "maximum": 15,
           "description": "Number of master nodes in cluster. Each master handles a portion of the 16,384 hash slots. Minimum 3 required for cluster mode. **Default: `3`**. **Production:** Start with 3-5 masters; scale based on throughput needs.",
           "default": 3
         },
         "replicasPerMaster": {
-          "type": "integer",
+          "type": "number",
           "minimum": 0,
           "maximum": 5,
           "description": "Number of replica nodes per master for high availability and read scaling. Total pods = clusterSize × (1 + replicasPerMaster). **Default: `1`**. **Production:** Use 1-2 replicas per master.",
@@ -66,39 +66,39 @@
       "description": "Redis Sentinel mode configuration. Only applicable when deploymentMode is 'sentinel'. Provides automatic failover for master-replica topology.",
       "properties": {
         "replicationSize": {
-          "type": "integer",
+          "type": "number",
           "minimum": 2,
           "maximum": 5,
           "description": "Total size of replication group (1 master + N replicas). **Default: `3`** (1 master + 2 replicas). **Production:** Use 3 for HA.",
           "default": 3
         },
         "sentinelSize": {
-          "type": "integer",
+          "type": "number",
           "minimum": 3,
           "maximum": 7,
           "description": "Number of Sentinel instances for monitoring and failover. Must be odd number >= 3 for proper quorum. **Default: `3`**. **Production:** Use 3 or 5; more than 5 rarely needed.",
           "default": 3
         },
         "quorum": {
-          "type": "integer",
+          "type": "number",
           "minimum": 2,
           "description": "Number of Sentinels that must agree master is down before initiating failover. Should be majority (e.g., 2 for 3 sentinels, 3 for 5 sentinels). **Default: `2`**.",
           "default": 2
         },
         "downAfterMilliseconds": {
-          "type": "integer",
+          "type": "number",
           "minimum": 1000,
           "description": "Milliseconds before Sentinel marks an instance as down (SDOWN state). Lower values = faster failover but more false positives. **Default: `5000`** (5 seconds). **Production:** 5000-10000ms depending on network stability.",
           "default": 5000
         },
         "parallelSyncs": {
-          "type": "integer",
+          "type": "number",
           "minimum": 1,
           "description": "Number of replicas that can sync with new master in parallel during failover. Lower values reduce load on new master. **Default: `1`**. **Production:** Keep at 1 to avoid overwhelming new master.",
           "default": 1
         },
         "failoverTimeout": {
-          "type": "integer",
+          "type": "number",
           "minimum": 1000,
           "description": "Failover timeout in milliseconds. If failover isn't complete in this time, Sentinel retries. **Default: `10000`** (10 seconds).",
           "default": 10000
@@ -256,12 +256,12 @@
           "default": true
         },
         "runAsUser": {
-          "type": "integer",
+          "type": "number",
           "description": "UID to run Redis process. **Default: `1000`** (redis user in opstree image).",
           "default": 1000
         },
         "fsGroup": {
-          "type": "integer",
+          "type": "number",
           "description": "GID for volume ownership. **Default: `1000`** (redis group).",
           "default": 1000
         }
@@ -299,7 +299,7 @@
           "default": true
         },
         "minAvailable": {
-          "type": "integer",
+          "type": "number",
           "minimum": 1,
           "description": "Minimum pods that must remain available during disruptions. **Default: `1`**. **Production:** Set based on deployment size - for 3 nodes, minAvailable=2.",
           "default": 1

@@ -15,12 +15,12 @@
             "pattern": "^(db\\.(?:[trm][0-9][a-z]?\\.(?:micro|small|medium|large|xlarge|\\d+x?large))|db\\.serverless)$"
           },
           "instanceCount": {
-            "type": "integer",
+            "type": "number",
             "description": "Number of reader instances of this type to provision. Increase count to distribute read load across more instances or improve availability. `Impact:` Each additional instance increases costs but improves read scalability and fault tolerance. `Production:` Start with 1-2 readers and scale based on read metrics. Consider at least 2 readers across different AZs for high availability.",
             "minimum": 1
           },
           "promotionTier": {
-            "type": "integer",
+            "type": "number",
             "description": "Priority order (0-15) for promoting this reader to writer during failover, where 0 is highest priority. Set lower values for readers with instance sizes matching the writer to ensure smooth failover without capacity constraints. `Impact:` Incorrect tier settings can cause failover to undersized instances, degrading write performance. `Production:` Use tier 0-1 for production-grade readers that match writer capacity, tier 2-5 for secondary readers, and tier 10-15 for analytics or reporting readers.",
             "minimum": 0,
             "maximum": 15

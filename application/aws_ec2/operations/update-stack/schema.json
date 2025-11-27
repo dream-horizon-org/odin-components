@@ -3,7 +3,7 @@
     "type": "object",
     "properties": {
         "stacks": {
-            "type": "integer",
+            "type": "number",
             "maximum": 10,
             "description": "New number of stacks"
         },

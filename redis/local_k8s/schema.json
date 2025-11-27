@@ -45,14 +45,14 @@
       "description": "Redis Cluster mode configuration. Only applicable when deploymentMode is 'cluster'. For local clusters you should keep sizes small (e.g. 3 masters × 1 replica).",
       "properties": {
         "clusterSize": {
-          "type": "integer",
+          "type": "number",
           "minimum": 3,
           "maximum": 9,
           "description": "Number of master nodes in cluster. Each master handles a portion of the 16,384 hash slots. Minimum 3 required. **Default: `3`**.",
           "default": 3
         },
         "replicasPerMaster": {
-          "type": "integer",
+          "type": "number",
           "minimum": 0,
           "maximum": 2,
           "description": "Number of replica nodes per master. Total pods = clusterSize × (1 + replicasPerMaster). For local clusters keep this small (0–1). **Default: `0`**.",
@@ -66,38 +66,38 @@
       "description": "Redis Sentinel mode configuration. Only applicable when deploymentMode is 'sentinel'. Provides automatic failover for master-replica topology. Defaults are reduced for local usage.",
       "properties": {
         "replicationSize": {
-          "type": "integer",
+          "type": "number",
           "minimum": 2,
           "maximum": 3,
           "description": "Total size of replication group (1 master + N replicas). **Default: `2`** (1 master + 1 replica) for local.",
           "default": 2
         },
         "sentinelSize": {
-          "type": "integer",
+          "type": "number",
           "enum": [3],
           "description": "Number of Sentinel instances. For local clusters we default to 3 for proper quorum. **Default: `3`**.",
           "default": 3
         },
         "quorum": {
-          "type": "integer",
+          "type": "number",
           "minimum": 2,
           "description": "Number of Sentinels that must agree master is down before initiating failover. **Default: `2`**.",
           "default": 2
         },
         "downAfterMilliseconds": {
-          "type": "integer",
+          "type": "number",
           "minimum": 1000,
           "description": "Milliseconds before Sentinel marks an instance as down. **Default: `5000`**.",
           "default": 5000
         },
         "parallelSyncs": {
-          "type": "integer",
+          "type": "number",
           "minimum": 1,
           "description": "Number of replicas that can sync with new master in parallel during failover. **Default: `1`**.",
           "default": 1
         },
         "failoverTimeout": {
-          "type": "integer",
+          "type": "number",
           "minimum": 1000,
           "description": "Failover timeout in milliseconds. **Default: `10000`**.",
           "default": 10000
@@ -255,12 +255,12 @@
           "default": true
         },
         "runAsUser": {
-          "type": "integer",
+          "type": "number",
           "description": "UID to run Redis process. **Default: `1000`**.",
           "default": 1000
         },
         "fsGroup": {
-          "type": "integer",
+          "type": "number",
           "description": "GID for volume ownership. **Default: `1000`**.",
           "default": 1000
         }
@@ -298,7 +298,7 @@
           "default": false
         },
         "minAvailable": {
-          "type": "integer",
+          "type": "number",
           "minimum": 1,
           "description": "Minimum pods that must remain available during disruptions. **Default: `1`**.",
           "default": 1

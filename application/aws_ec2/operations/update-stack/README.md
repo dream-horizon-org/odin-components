@@ -8,7 +8,7 @@ Update the number of application stacks
 
 | Property      | Type    | Required | Description          |
 |---------------|---------|----------|----------------------|
-| `stacks`      | integer | **Yes**  | New number of stacks |
+| `stacks`      | number  | **Yes**  | New number of stacks |
 | `autoRouting` | boolean | No       |                      |
 
 
