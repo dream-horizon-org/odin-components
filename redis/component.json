@@ -1,4 +1,4 @@
 {
   "version": "0.0.1",
-  "description": "Provision redis"
+  "description": "Deploy redis in aws_elasticache, aws_k8s and local_k8s"
 }
